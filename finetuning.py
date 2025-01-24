@@ -1,6 +1,7 @@
 # LOAD THE BASE MODEL
 import os
 import torch
+import shutil
 import optuna
 import pandas as pd
 from datasets import Dataset
@@ -8,6 +9,15 @@ from dotenv import load_dotenv
 from peft import LoraConfig, get_peft_model
 from huggingface_hub import HfApi, HfFolder
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
+
+# Clear cache by deleting the model folder from cache
+cache_dir = os.path.expanduser("~/.cache/huggingface")
+shutil.rmtree(cache_dir, ignore_errors=True)
+model_save_path = "fine-tuned-mistral"
+if os.path.exists(model_save_path):
+    shutil.rmtree(model_save_path)
+    print(f"Model saved at {model_save_path} deleted.")
+    
 
 print('Cude is available: ', torch.cuda.is_available())  # Should return True if CUDA is available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -75,6 +85,18 @@ val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "la
 print(train_dataset[0])
 
 
+for name, param in model.named_parameters():
+    if "self_attn" in name and ("q_proj" in name or "k_proj" in name or "v_proj" in name):
+        param.requires_grad = True  # Make sure these layers are trainable
+
+for name, param in model.named_parameters():
+    if "self_attn" in name and ("q_proj" in name or "k_proj" in name or "v_proj" in name):
+        print(f"Layer {name}: requires_grad={param.requires_grad}")
+
+print('LORA RELATED PRINTS end')
+
+for name, module in model.named_modules():
+    print(f"Layer: {name}")
 
 
 # Configure LoRA
