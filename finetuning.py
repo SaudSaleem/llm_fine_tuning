@@ -15,6 +15,10 @@ load_dotenv()
 # Load quantized model and tokenizer
 model_name = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+# Set the padding token if it's not already defined
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+    
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     device_map="auto",       # Automatically map layers to available GPUs
