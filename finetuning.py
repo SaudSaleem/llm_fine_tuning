@@ -44,14 +44,22 @@ val_dataset = train_test_split["test"]
 print("train dataset",train_dataset[0])
 # Tokenize dataset
 def preprocess(example):
+    # Extracting the 'content' key from the 'user' column for the prompt
+    prompt = example['user']
+    
+    # Tokenizing the prompt
     tokens = tokenizer(
-        example['prompt'],
+        prompt,  # Use the 'content' key as the prompt
         truncation=True,
-        max_length=512,  # Ensure this matches across all columns
+        max_length=512,
         padding="max_length",
     )
-    tokens["labels"] = tokens["input_ids"].copy()  # Ensure labels are the same length as input_ids
+    
+    # If you want to treat the same tokens as labels, you can do this:
+    tokens["labels"] = tokens["input_ids"].copy()  # Make labels same as input_ids
+    
     return tokens
+
 
 train_dataset = train_dataset.map(preprocess, batched=True)
 val_dataset = val_dataset.map(preprocess, batched=True)
