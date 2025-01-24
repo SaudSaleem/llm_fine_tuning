@@ -91,10 +91,16 @@ for name, param in model.named_parameters():
 
 print('LORA RELATED PRINTS end')
 
+for name, module in model.named_modules():
+    if 'q_proj' in name or 'k_proj' in name or 'v_proj' in name:
+        print(f"Found projection layer: {name}")
+
 for name, param in model.named_parameters():
-    print(f"Layer: {name}, param {param}, requires_grad: {param.requires_grad}")
+    print(f"Layer: {name}, requires_grad: {param.requires_grad}")
     if 'q_proj' in name or 'k_proj' in name or 'v_proj' in name:
         print(f"LoRA Layer {name}: requires_grad={param.requires_grad}")
+
+
 
 
 # Configure LoRA
