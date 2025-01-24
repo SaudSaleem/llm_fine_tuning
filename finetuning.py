@@ -58,7 +58,7 @@ val_dataset = val_dataset.map(preprocess, batched=True)
 # Set format for PyTorch
 train_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
 val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
-
+print(train_dataset[0])
 
 # Configure LoRA
 lora_config = LoraConfig(
