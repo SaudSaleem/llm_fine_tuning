@@ -41,6 +41,7 @@ train_test_split = dataset.train_test_split(test_size=0.2, seed=42)
 train_dataset = train_test_split["train"]
 val_dataset = train_test_split["test"]
 
+print("train dataset",train_dataset[0])
 # Tokenize dataset
 def preprocess(example):
     tokens = tokenizer(
