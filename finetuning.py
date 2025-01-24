@@ -75,30 +75,6 @@ val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "la
 print(train_dataset[0])
 
 
-for name, param in model.named_parameters():
-    if 'q_proj' in name or 'v_proj' in name:
-        param.requires_grad = True  # Make sure LoRA layers are trainable
-
-for name, param in model.named_parameters():
-    print(f"{name}: {param.requires_grad}")
-
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        print(f"{name} is trainable")
-    else:
-        print(f"{name} is not trainable")
-
-# Check if any model layers are frozen
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        print(f"{name}: requires_grad={param.requires_grad}")  # should be True
-    else:
-        print(f"{name} is frozen.")
-
-print('LORA RELATED PRINTS end')
-
-for name, module in model.named_modules():
-    print(f"Layer: {name}")
 
 
 # Configure LoRA
