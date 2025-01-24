@@ -18,7 +18,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 # Set the padding token if it's not already defined
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
-    
+
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     device_map="auto",       # Automatically map layers to available GPUs
@@ -43,9 +43,13 @@ val_dataset = train_test_split["test"]
 
 # Tokenize dataset
 def preprocess(example):
-    prompt = f"User: {example['user']}\nAssistant: {example['assistant']}"
-    tokens = tokenizer(prompt, truncation=True, max_length=512, padding="max_length")
-    tokens["labels"] = tokens["input_ids"].copy()  # Causal LM requires labels
+    tokens = tokenizer(
+        example['prompt'],
+        truncation=True,
+        max_length=512,  # Ensure this matches across all columns
+        padding="max_length",
+    )
+    tokens["labels"] = tokens["input_ids"].copy()  # Ensure labels are the same length as input_ids
     return tokens
 
 train_dataset = train_dataset.map(preprocess, batched=True)
