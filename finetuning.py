@@ -102,6 +102,7 @@ def objective(trial):
         load_best_model_at_end=True,
         metric_for_best_model="loss",
         report_to="wandb",  # Log with Weights & Biases
+        run_name="mistral_run_name",
     )
 
     trainer = Trainer(
@@ -138,6 +139,7 @@ training_args = TrainingArguments(
     save_total_limit=2,
     load_best_model_at_end=True,
     metric_for_best_model="loss",
+     run_name="mistral_run_name",
 )
 
 trainer = Trainer(
