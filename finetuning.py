@@ -1,11 +1,16 @@
 # LOAD THE BASE MODEL
+import os
 import optuna
 import pandas as pd
 from datasets import Dataset
+from dotenv import load_dotenv
 from peft import LoraConfig, get_peft_model
 from huggingface_hub import HfApi, HfFolder
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 
+
+# Load environment variables from the .env file
+load_dotenv()
 
 # Load quantized model and tokenizer
 model_name = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
@@ -134,7 +139,19 @@ tokenizer.save_pretrained("fine-tuned-mistral")
 
 
 
+# Authenticate with your Hugging Face token
+# Retrieve the token
+hf_token = os.getenv("HF_TOKEN")
+HfFolder.save_token(hf_token)
+repo_id = "saudsaleem/fine-tuned-mistral"
 
+# Create the repository as public
+api = HfApi()
+api.create_repo(repo_id=repo_id, private=False)
+
+# Push model and tokenizer to the public repository
+model.push_to_hub(repo_id)
+tokenizer.push_to_hub(repo_id)
 
 # Inference Script
 
