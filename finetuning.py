@@ -82,7 +82,7 @@ val_dataset = val_dataset.map(preprocess, batched=True)
 # Set format for PyTorch
 train_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
 val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
-print(train_dataset[0])
+print('MODEL SAUD', model)
 
 
 for name, param in model.named_parameters():
@@ -101,9 +101,9 @@ for name, param in model.named_parameters():
 lora_config = LoraConfig(
     r=16,                     
     lora_alpha=32,             
-    target_modules=["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"],
+    target_modules=["q_proj", "k_proj", "v_proj"],
     lora_dropout=0.1,         
-    bias="none"                
+    bias="none" 
 )
 
 # Wrap model with LoRA
