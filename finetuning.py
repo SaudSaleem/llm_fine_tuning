@@ -105,7 +105,7 @@ for name, module in model.named_modules():
 lora_config = LoraConfig(
     r=16,                     
     lora_alpha=32,             
-    target_modules=["q_proj", "v_proj"], 
+    target_modules=["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"],
     lora_dropout=0.1,         
     bias="none"                
 )
