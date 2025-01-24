@@ -29,7 +29,7 @@ model.gradient_checkpointing_enable()
 
 df = pd.read_csv("bitAgent.csv")
 # Ensure dataset is in the correct format (message-based JSON)
-df = df.rename(columns={"Input": "user", "Output": "assistant"})
+df = df.rename(columns={"input": "user", "output": "assistant"})
 dataset = Dataset.from_pandas(df)
 
 # Split into training and validation sets
