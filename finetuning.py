@@ -84,10 +84,10 @@ train_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "
 val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
 print('MODEL SAUD', model)
 
-
+print('printing self aten')
 for name, param in model.named_parameters():
-    if "self_attn" in name and ("q_proj" in name or "k_proj" in name or "v_proj" in name):
-        param.requires_grad = True  # Make sure these layers are trainable
+    if 'self_attn.q_proj' in name or 'self_attn.k_proj' in name or 'self_attn.v_proj' in name:
+        print(f"LoRA Layer {name}: requires_grad={param.requires_grad}")
 
 print('LORA RELATED PRINTS end')
 
@@ -99,11 +99,10 @@ for name, param in model.named_parameters():
 
 # Configure LoRA
 lora_config = LoraConfig(
-    r=16,                     
-    lora_alpha=32,             
-    target_modules=["q_proj", "k_proj", "v_proj"],
-    lora_dropout=0.1,         
-    bias="none" 
+    target_modules=["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"],  # Full path to the layers
+    r=8,  # Rank of the low-rank approximation
+    lora_alpha=16,  # Scaling factor
+    lora_dropout=0.1  # Dropout rate
 )
 
 # Wrap model with LoRA
