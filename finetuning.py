@@ -17,7 +17,7 @@ model_save_path = "fine-tuned-mistral"
 if os.path.exists(model_save_path):
     shutil.rmtree(model_save_path)
     print(f"Model saved at {model_save_path} deleted.")
-    
+
 
 print('Cude is available: ', torch.cuda.is_available())  # Should return True if CUDA is available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -89,14 +89,12 @@ for name, param in model.named_parameters():
     if "self_attn" in name and ("q_proj" in name or "k_proj" in name or "v_proj" in name):
         param.requires_grad = True  # Make sure these layers are trainable
 
-for name, param in model.named_parameters():
-    if "self_attn" in name and ("q_proj" in name or "k_proj" in name or "v_proj" in name):
-        print(f"Layer {name}: requires_grad={param.requires_grad}")
-
 print('LORA RELATED PRINTS end')
 
-for name, module in model.named_modules():
-    print(f"Layer: {name}")
+for name, param in model.named_parameters():
+    print(f"Layer: {name}, requires_grad: {param.requires_grad}")
+    if 'q_proj' in name or 'k_proj' in name or 'v_proj' in name:
+        print(f"LoRA Layer {name}: requires_grad={param.requires_grad}")
 
 
 # Configure LoRA
