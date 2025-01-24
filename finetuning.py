@@ -1,0 +1,151 @@
+# LOAD THE BASE MODEL
+import optuna
+import pandas as pd
+from datasets import Dataset
+from peft import LoraConfig, get_peft_model
+from huggingface_hub import HfApi, HfFolder
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
+
+
+# Load quantized model and tokenizer
+model_name = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    device_map="auto",       # Automatically map layers to available GPUs
+    torch_dtype="auto",
+    trust_remote_code=True   
+)
+
+# Enable gradient checkpointing for memory efficiency
+model.gradient_checkpointing_enable()
+
+# LOAD AND PREPARE THE DATASET
+
+df = pd.read_csv("bitAgent.csv")
+# Ensure dataset is in the correct format (message-based JSON)
+df = df.rename(columns={"Input": "user", "Output": "assistant"})
+dataset = Dataset.from_pandas(df)
+
+# Split into training and validation sets
+train_test_split = dataset.train_test_split(test_size=0.2, seed=42)
+train_dataset = train_test_split["train"]
+val_dataset = train_test_split["test"]
+
+# Tokenize dataset
+def preprocess(example):
+    prompt = f"User: {example['user']}\nAssistant: {example['assistant']}"
+    tokens = tokenizer(prompt, truncation=True, max_length=512, padding="max_length")
+    tokens["labels"] = tokens["input_ids"].copy()  # Causal LM requires labels
+    return tokens
+
+train_dataset = train_dataset.map(preprocess, batched=True)
+val_dataset = val_dataset.map(preprocess, batched=True)
+
+# Set format for PyTorch
+train_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
+val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
+
+
+# Configure LoRA
+lora_config = LoraConfig(
+    r=16,                     
+    lora_alpha=32,             
+    target_modules=["q_proj", "v_proj"], 
+    lora_dropout=0.1,         
+    bias="none"                
+)
+
+# Wrap model with LoRA
+model = get_peft_model(model, lora_config)
+model.print_trainable_parameters()
+
+# function for hyperparameter tuning
+def objective(trial):
+    learning_rate = trial.suggest_loguniform("learning_rate", 1e-5, 1e-3)
+    per_device_train_batch_size = trial.suggest_categorical("batch_size", [8, 16, 32])
+    gradient_accumulation_steps = trial.suggest_categorical("grad_accum", [1, 2, 4])
+
+    training_args = TrainingArguments(
+        output_dir="./results",
+        evaluation_strategy="epoch",
+        save_strategy="epoch",
+        learning_rate=learning_rate,
+        per_device_train_batch_size=per_device_train_batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        num_train_epochs=3,
+        logging_dir="./logs",
+        fp16=True,  # Mixed precision
+        save_total_limit=2,
+        load_best_model_at_end=True,
+        metric_for_best_model="loss",
+        report_to="wandb",  # Log with Weights & Biases
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
+    )
+
+    # Train and evaluate
+    trainer.train()
+    eval_results = trainer.evaluate()
+    return eval_results["eval_loss"]
+
+# Run Optuna Study
+study = optuna.create_study(direction="minimize")
+study.optimize(objective, n_trials=10)
+
+# Get the best hyperparameters
+best_hyperparameters = study.best_params
+print(best_hyperparameters)
+
+# Fine-Tuning
+training_args = TrainingArguments(
+    output_dir="./results",
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
+    learning_rate=best_hyperparameters["learning_rate"],
+    per_device_train_batch_size=best_hyperparameters["batch_size"],
+    gradient_accumulation_steps=best_hyperparameters["grad_accum"],
+    num_train_epochs=3,
+    logging_dir="./logs",
+    fp16=True,
+    save_total_limit=2,
+    load_best_model_at_end=True,
+    metric_for_best_model="loss",
+)
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    eval_dataset=val_dataset,
+)
+
+trainer.train()
+
+
+# Save model and tokenizer locally
+model.save_pretrained("fine-tuned-mistral")
+tokenizer.save_pretrained("fine-tuned-mistral")
+
+
+
+
+
+# Inference Script
+
+# Load the fine-tuned model
+tokenizer = AutoTokenizer.from_pretrained("saudsaleem/fine-tuned-mistral")
+model = AutoModelForCausalLM.from_pretrained("saudsaleem/fine-tuned-mistral")
+
+# Generate response
+def generate_response(input_text):
+    inputs = tokenizer(f"User: {input_text}\nAssistant:", return_tensors="pt")
+    outputs = model.generate(**inputs, max_length=100, num_beams=5, early_stopping=True)
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+print(generate_response("What is the weather in NYC?"))
