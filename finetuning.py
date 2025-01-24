@@ -1,5 +1,6 @@
 # LOAD THE BASE MODEL
 import os
+import torch
 import optuna
 import pandas as pd
 from datasets import Dataset
@@ -8,6 +9,7 @@ from peft import LoraConfig, get_peft_model
 from huggingface_hub import HfApi, HfFolder
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 
+print('Cude is available: ', torch.cuda.is_available())  # Should return True if CUDA is available
 
 # Load environment variables from the .env file
 load_dotenv()
