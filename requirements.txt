@@ -1,0 +1,9 @@
+transformers
+peft
+datasets
+optuna
+pandas
+torch
+accelerate
+bitsandbytes
+wandb
