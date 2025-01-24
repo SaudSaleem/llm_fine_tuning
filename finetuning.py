@@ -97,6 +97,10 @@ for name, param in model.named_parameters():
 
 print('LORA RELATED PRINTS end')
 
+for name, module in model.named_modules():
+    print(f"Layer: {name}")
+
+
 # Configure LoRA
 lora_config = LoraConfig(
     r=16,                     
