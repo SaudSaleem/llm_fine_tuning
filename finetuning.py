@@ -10,6 +10,8 @@ from huggingface_hub import HfApi, HfFolder
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 
 print('Cude is available: ', torch.cuda.is_available())  # Should return True if CUDA is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
 # Load environment variables from the .env file
 load_dotenv()
