@@ -1,14 +1,20 @@
 import os
 from huggingface_hub import Repository, HfApi, login
 
-# Define your model path and the Hugging Face repo URL
-model_path = "fine-tuned-mistral"  # Your model directory
-repo_url = "https://huggingface.co/saudsaleem/distilbert-distilgpt2-bitagent"  # Your Hugging Face repo URL
+# Define your model path
+model_path = "fine-tuned-mistral-bitagent-latest"  # Your model directory
+model_name = model_path.split("/")[-1]  # Extract the model name from the model path
 
+# Log in to Hugging Face (if you haven't already)
 hf_token = os.getenv("HF_TOKEN")
 print('hf_token', hf_token)
-# Log in to Hugging Face (if you haven't already)
 login(token=hf_token)  # Replace with your Hugging Face access token
+
+# Initialize the API to create a new repository
+api = HfApi()
+
+# Create a new repo with the name derived from the model path
+repo_url = api.create_repo(name=model_name, private=False)  # Private repo, you can change to False if public
 
 # Initialize the repository
 repo = Repository(local_dir=model_path, clone_from=repo_url)
@@ -20,4 +26,4 @@ repo.git_commit("Upload fine-tuned model")
 # Push the changes to Hugging Face
 repo.push_to_hub()
 
-print("Model has been successfully uploaded!")
+print(f"Model '{model_name}' has been successfully uploaded to Hugging Face!")

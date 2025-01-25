@@ -30,7 +30,7 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=4):
         output = model.generate(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            max_length=200,
+            max_length=max_length,
             num_beams=num_beams,
             pad_token_id=tokenizer.eos_token_id,
             early_stopping=True
