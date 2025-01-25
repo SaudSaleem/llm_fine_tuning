@@ -1,5 +1,5 @@
 import os
-from huggingface_hub import Repository, HfApi
+from huggingface_hub import Repository, HfApi, login
 
 # Define your model path and the Hugging Face repo URL
 model_path = "fine-tuned-mistral"  # Your model directory
@@ -8,7 +8,7 @@ repo_url = "https://huggingface.co/saudsaleem/distilbert-distilgpt2-bitagent"  #
 hf_token = os.getenv("HF_TOKEN")
 print('hf_token', hf_token)
 # Log in to Hugging Face (if you haven't already)
-HfApi().login(token=hf_token)  # Replace with your Hugging Face access token
+login(token=hf_token)  # Replace with your Hugging Face access token
 
 # Initialize the repository
 repo = Repository(local_dir=model_path, clone_from=repo_url)
