@@ -148,6 +148,7 @@ def objective(trial):
     # Train and evaluate
     trainer.train()
     eval_results = trainer.evaluate()
+    print('eval_results', eval_results)
     return eval_results["eval_loss"]
 
 # Run Optuna Study
