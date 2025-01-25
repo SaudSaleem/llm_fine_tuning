@@ -32,7 +32,7 @@ login(token=hf_token)
 
 
 
-base_model_id = "mistralai/Mistral-7B-v0.1"
+base_model_id = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_use_double_quant=True,
@@ -152,7 +152,7 @@ model.config.use_cache = False
 trainer.train()
 
 # Step 10: Evaluation After Fine-Tuning
-base_model_id = "mistralai/Mistral-7B-v0.1"
+base_model_id = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_use_double_quant=True,
