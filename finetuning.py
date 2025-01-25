@@ -133,7 +133,7 @@ def objective(trial):
         fp16=True,  # Mixed precision
         save_total_limit=2,
         load_best_model_at_end=True,
-        metric_for_best_model="eval_runtime",
+        metric_for_best_model="eval_loss",
         report_to="none",  # Log with Weights & Biases
         # run_name="mistral_run_name",
     )
@@ -171,7 +171,7 @@ training_args = TrainingArguments(
     fp16=True,
     save_total_limit=2,
     load_best_model_at_end=True,
-    metric_for_best_model="loss",
+    metric_for_best_model="eval_loss",
     # run_name="mistral_run_name",
 )
 
