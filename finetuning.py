@@ -34,7 +34,7 @@ print("Cuda version: ", torch.version.cuda)  # Prints the CUDA version that PyTo
 load_dotenv()
 
 # Load quantized model and tokenizer
-model_name = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
+model_name = "thesven/Mistral-7B-Instruct-v0.3-GPTQ"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 # Set the padding token if it's not already defined
 if tokenizer.pad_token is None:
@@ -92,14 +92,16 @@ print('MODEL SAUD', model)
 
 # Configure LoRA
 lora_config = LoraConfig(
-    target_modules=["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj", "self_attn.o_proj"],  # Target projection layers
-    r=8,  # Rank of the low-rank approximation
-    lora_alpha=16,  # Scaling factor
-    lora_dropout=0.1  # Dropout rate
+    r=16,  # Rank of the LoRA update matrices
+    lora_alpha=32,  # Scaling factor
+    target_modules=["q_proj", "v_proj"],  # Target modules to apply LoRA
+    lora_dropout=0.05,  # Dropout probability
+    bias="none",  # No bias adjustment
+    task_type="CAUSAL_LM"  # Task type for causal language modeling
 )
 
 # Wrap model with LoRA
-# model = get_peft_model(model, lora_config)
+model = get_peft_model(model, lora_config)
 print('printing self aten')
 
 # Ensure the model is in training mode
