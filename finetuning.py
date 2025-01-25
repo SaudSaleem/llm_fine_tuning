@@ -7,8 +7,11 @@ import pandas as pd
 from datasets import Dataset
 from dotenv import load_dotenv
 from peft import LoraConfig, get_peft_model
-from huggingface_hub import HfApi, HfFolder
+from huggingface_hub import HfApi, HfFolder, login
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
+
+hf_token = os.getenv("HF_TOKEN")
+login(token=hf_token)
 
 # Clear cache by deleting the model folder from cache
 cache_dir = os.path.expanduser("~/.cache/huggingface")
@@ -193,7 +196,6 @@ tokenizer.save_pretrained("fine-tuned-mistral")
 
 # Authenticate with your Hugging Face token
 # Retrieve the token
-hf_token = os.getenv("HF_TOKEN")
 HfFolder.save_token(hf_token)
 repo_id = "saudsaleem/fine-tuned-mistral"
 
