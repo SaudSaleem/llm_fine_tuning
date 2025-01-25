@@ -84,9 +84,6 @@ train_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "
 val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
 print('MODEL SAUD', model)
 
-print('printing self aten')
-model.print_trainable_parameters()
-
 
 
 
@@ -100,6 +97,7 @@ lora_config = LoraConfig(
 
 # Wrap model with LoRA
 model = get_peft_model(model, lora_config)
+print('printing self aten')
 model.print_trainable_parameters()
 
 # function for hyperparameter tuning
