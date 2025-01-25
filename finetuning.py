@@ -92,12 +92,10 @@ print('MODEL SAUD', model)
 
 # Configure LoRA
 lora_config = LoraConfig(
-    r=16,  # Rank of the LoRA update matrices
-    lora_alpha=32,  # Scaling factor
-    target_modules=["q_proj", "v_proj"],  # Target modules to apply LoRA
-    lora_dropout=0.05,  # Dropout probability
-    bias="none",  # No bias adjustment
-    task_type="CAUSAL_LM"  # Task type for causal language modeling
+    target_modules=["q_proj", "k_proj", "v_proj"],  # Full path to the layers
+    r=8,  # Rank of the low-rank approximation
+    lora_alpha=16,  # Scaling factor
+    lora_dropout=0.1  # Dropout rate
 )
 
 # Wrap model with LoRA
