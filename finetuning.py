@@ -28,7 +28,7 @@ print("Cuda version: ", torch.version.cuda)  # Prints the CUDA version that PyTo
 load_dotenv()
 
 # Load quantized model and tokenizer
-model_name = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
+model_name = "thesven/Mistral-7B-Instruct-v0.3-GPTQ"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 # Set the padding token if it's not already defined
 if tokenizer.pad_token is None:
