@@ -1,0 +1,6 @@
+input,output
+"Explain the concept of recursion in programming.","Recursion is a technique in programming where a function calls itself to solve smaller instances of the same problem until a base condition is met."
+"What are the key benefits of server-side rendering (SSR) in web development?","Server-side rendering improves initial load times, enhances SEO, and provides better performance for users on slower devices or connections."
+"List three ways to optimize a TypeScript application for performance.","1. Use tree shaking to eliminate unused code. 2. Enable strict type-checking for catching errors early. 3. Optimize imports to avoid loading unnecessary modules."
+"How does caching improve web application performance?","Caching stores frequently accessed data in a temporary storage location, reducing server load and speeding up response times for users."
+"Describe the purpose of an API gateway in microservices architecture.","An API gateway acts as a single entry point for clients to access multiple microservices, handling tasks like authentication, request routing, and rate limiting."

@@ -46,7 +46,7 @@ model.gradient_checkpointing_enable()
 
 # LOAD AND PREPARE THE DATASET
 
-df = pd.read_csv("bitAgent.csv")
+df = pd.read_csv("bitAgent1.csv")
 # Ensure dataset is in the correct format (message-based JSON)
 df = df.rename(columns={"input": "user", "output": "assistant"})
 dataset = Dataset.from_pandas(df)
@@ -105,7 +105,7 @@ for name, param in model.named_parameters():
 
 # Configure LoRA
 lora_config = LoraConfig(
-    target_modules=["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"],  # Full path to the layers
+    target_modules=["q_proj", "k_proj", "v_proj"],  # Full path to the layers
     r=8,  # Rank of the low-rank approximation
     lora_alpha=16,  # Scaling factor
     lora_dropout=0.1  # Dropout rate
