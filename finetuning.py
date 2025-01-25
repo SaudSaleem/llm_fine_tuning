@@ -11,12 +11,12 @@ from huggingface_hub import HfApi, HfFolder
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 
 # Clear cache by deleting the model folder from cache
-# cache_dir = os.path.expanduser("~/.cache/huggingface")
-# shutil.rmtree(cache_dir, ignore_errors=True)
-# model_save_path = "fine-tuned-mistral"
-# if os.path.exists(model_save_path):
-#     shutil.rmtree(model_save_path)
-#     print(f"Model saved at {model_save_path} deleted.")
+cache_dir = os.path.expanduser("~/.cache/huggingface")
+shutil.rmtree(cache_dir, ignore_errors=True)
+model_save_path = "fine-tuned-mistral"
+if os.path.exists(model_save_path):
+    shutil.rmtree(model_save_path)
+    print(f"Model saved at {model_save_path} deleted.")
 
 
 print('Cude is available: ', torch.cuda.is_available())  # Should return True if CUDA is available
