@@ -12,6 +12,16 @@ from peft import LoraConfig, get_peft_model
 from huggingface_hub import HfApi, HfFolder, login
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 
+# Create a tensor and perform a simple operation on the GPU
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+    x = torch.rand(5, 5).to(device)  # Move tensor to GPU
+    y = torch.rand(5, 5).to(device)
+    z = x + y  # Perform a simple operation
+    print("Operation successfully performed on GPU.")
+else:
+    print("CUDA is not available, operation will fall back to CPU.")
+ 
 hf_token = os.getenv("HF_TOKEN")
 print('hf_token', hf_token)
 login(token=hf_token)
@@ -34,7 +44,7 @@ print("Cuda version: ", torch.version.cuda)  # Prints the CUDA version that PyTo
 load_dotenv()
 
 # Load quantized model and tokenizer
-model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+model_name = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 # Set the padding token if it's not already defined
 if tokenizer.pad_token is None:
