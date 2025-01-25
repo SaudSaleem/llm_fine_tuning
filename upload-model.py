@@ -14,7 +14,7 @@ login(token=hf_token)  # Replace with your Hugging Face access token
 api = HfApi()
 
 # Create a new repo with the name derived from the model path
-repo_url = api.create_repo(name=model_name, private=False)  # Private repo, you can change to False if public
+repo_url = api.create_repo(repo_id=model_name, private=False)  # Private repo, you can change to False if public
 
 # Initialize the repository
 repo = Repository(local_dir=model_path, clone_from=repo_url)
