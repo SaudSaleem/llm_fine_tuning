@@ -8,3 +8,6 @@ torch
 accelerate
 bitsandbytes
 wandb
+sentencepiece
+tokenizers
+scikit-learn

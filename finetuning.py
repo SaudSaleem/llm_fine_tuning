@@ -4,6 +4,8 @@ import torch
 import shutil
 import optuna
 import pandas as pd
+import sentencepiece
+from sklearn.metrics import accuracy_score
 from datasets import Dataset
 from dotenv import load_dotenv
 from peft import LoraConfig, get_peft_model
@@ -88,9 +90,6 @@ train_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "
 val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
 print('MODEL SAUD', model)
 
-
-
-
 # Configure LoRA
 lora_config = LoraConfig(
     target_modules=["q_proj", "k_proj", "v_proj"],  # Full path to the layers
@@ -119,6 +118,13 @@ loss.backward()
 
 print('BELOW')
 
+# Define a function to compute metrics (including loss)
+def compute_metrics(p):
+    predictions, labels = p
+    preds = predictions.argmax(axis=-1)
+    loss = p.predictions.mean()  # Assuming `predictions` includes loss as part of the output tuple
+    return {"eval_loss": loss, "accuracy": accuracy_score(labels, preds)}
+
 # function for hyperparameter tuning
 def objective(trial):
     learning_rate = trial.suggest_loguniform("learning_rate", 1e-5, 1e-3)
@@ -137,7 +143,8 @@ def objective(trial):
         fp16=True,  # Mixed precision
         save_total_limit=2,
         load_best_model_at_end=True,
-        metric_for_best_model="loss",
+        metric_for_best_model="eval_runtime",
+        compute_metrics=compute_metrics,  # Pass the custom metrics function
         report_to="none",  # Log with Weights & Biases
         # run_name="mistral_run_name",
     )
