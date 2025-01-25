@@ -92,7 +92,7 @@ print('MODEL SAUD', model)
 
 # Configure LoRA
 lora_config = LoraConfig(
-    target_modules=["q_proj", "k_proj", "v_proj"],  # Full path to the layers
+    # target_modules=["q_proj", "k_proj", "v_proj"],  # Full path to the layers
     r=8,  # Rank of the low-rank approximation
     lora_alpha=16,  # Scaling factor
     lora_dropout=0.1  # Dropout rate
