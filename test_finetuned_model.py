@@ -1,4 +1,8 @@
+import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+
+# Check if CUDA is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
     """
@@ -16,26 +20,26 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
     try:
         # Load the tokenizer and model
         tokenizer = AutoTokenizer.from_pretrained(model_path)
-        model = AutoModelForCausalLM.from_pretrained(model_path)
+        model = AutoModelForCausalLM.from_pretrained(model_path).to(device)
 
         # # Tokenize the input prompt
         # input_ids = tokenizer.encode(prompt, return_tensors="pt")
         # Tokenize the input with attention mask
+        # Tokenize the input and move to device
         inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
-        input_ids = inputs["input_ids"]
-        attention_mask = inputs["attention_mask"]
-        # Generate a response
-        # Generate the response
+        input_ids = inputs["input_ids"].to(device)
+        attention_mask = inputs["attention_mask"].to(device)
+
+        # Generate response
         output = model.generate(
             input_ids=input_ids,
             attention_mask=attention_mask,
             max_length=max_length,
             num_beams=num_beams,
-            pad_token_id=tokenizer.eos_token_id,  # Explicitly set pad_token_id
+            pad_token_id=tokenizer.eos_token_id,
             no_repeat_ngram_size=2,
             early_stopping=True
         )
-
 
         # Decode the generated response
         response = tokenizer.decode(output[0], skip_special_tokens=True)
