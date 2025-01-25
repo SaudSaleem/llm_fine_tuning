@@ -115,6 +115,13 @@ for name, param in model.named_parameters():
         print(f"Gradients for {name}:", param.grad)
 print('BELOW')
 
+def compute_metrics(p):
+    predictions, labels = p
+    preds = predictions.argmax(axis=-1)
+    loss = p.predictions.mean()  # Assuming `predictions` includes loss as part of the output tuple
+    return {"eval_loss": loss, "accuracy": accuracy_score(labels, preds)}
+
+
 # function for hyperparameter tuning
 def objective(trial):
     learning_rate = trial.suggest_loguniform("learning_rate", 1e-5, 1e-3)
@@ -133,7 +140,8 @@ def objective(trial):
         fp16=True,  # Mixed precision
         save_total_limit=2,
         load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",
+        # metric_for_best_model="eval_loss",
+        compute_metrics=compute_metrics,  # Add this line to compute eval_loss
         report_to="none",  # Log with Weights & Biases
         # run_name="mistral_run_name",
     )
@@ -171,7 +179,7 @@ training_args = TrainingArguments(
     fp16=True,
     save_total_limit=2,
     load_best_model_at_end=True,
-    metric_for_best_model="eval_loss",
+    compute_metrics=compute_metrics,  # Add this line to compute eval_loss
     # run_name="mistral_run_name",
 )
 
