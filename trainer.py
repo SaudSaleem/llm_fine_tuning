@@ -118,7 +118,7 @@ if torch.cuda.device_count() > 1:
     model.is_parallelizable = True
     model.model_parallel = True
 
-project = "bitagent-finetune"
+project = f"{base_model_id} + bitagent-finetune"
 base_model_name = "mistral"
 run_name = base_model_name + "-" + project
 output_dir = "./" + run_name
