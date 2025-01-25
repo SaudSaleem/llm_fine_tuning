@@ -7,7 +7,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use GPU ID 0, modify as needed
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # print("Device:", device)
 
-def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
+def test_finetuned_model(model_path, prompt, max_length=100, num_beams=4):
     try:
         # Load tokenizer and model, move model to device
         tokenizer = AutoTokenizer.from_pretrained(model_path)
@@ -33,7 +33,6 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
             max_length=200,
             num_beams=num_beams,
             pad_token_id=tokenizer.eos_token_id,
-            no_repeat_ngram_size=2,
             early_stopping=True
         )
 
