@@ -11,12 +11,12 @@ from huggingface_hub import HfApi, HfFolder
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 
 # Clear cache by deleting the model folder from cache
-cache_dir = os.path.expanduser("~/.cache/huggingface")
-shutil.rmtree(cache_dir, ignore_errors=True)
-model_save_path = "fine-tuned-mistral"
-if os.path.exists(model_save_path):
-    shutil.rmtree(model_save_path)
-    print(f"Model saved at {model_save_path} deleted.")
+# cache_dir = os.path.expanduser("~/.cache/huggingface")
+# shutil.rmtree(cache_dir, ignore_errors=True)
+# model_save_path = "fine-tuned-mistral"
+# if os.path.exists(model_save_path):
+#     shutil.rmtree(model_save_path)
+#     print(f"Model saved at {model_save_path} deleted.")
 
 
 print('Cude is available: ', torch.cuda.is_available())  # Should return True if CUDA is available
@@ -85,20 +85,7 @@ val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "la
 print('MODEL SAUD', model)
 
 print('printing self aten')
-for name, param in model.named_parameters():
-    if 'self_attn.q_proj' in name or 'self_attn.k_proj' in name or 'self_attn.v_proj' in name:
-        print(f"LoRA Layer {name}: requires_grad={param.requires_grad}")
-
-print('LORA RELATED PRINTS end')
-
-for name, module in model.named_modules():
-    if 'q_proj' in name or 'k_proj' in name or 'v_proj' in name:
-        print(f"Found projection layer: {name}")
-
-for name, param in model.named_parameters():
-    print(f"Layer: {name}, requires_grad: {param.requires_grad}")
-    if 'q_proj' in name or 'k_proj' in name or 'v_proj' in name:
-        print(f"LoRA Layer {name}: requires_grad={param.requires_grad}")
+model.print_trainable_parameters()
 
 
 
