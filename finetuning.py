@@ -11,28 +11,18 @@ from dotenv import load_dotenv
 from peft import LoraConfig, get_peft_model
 from huggingface_hub import HfApi, HfFolder, login
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
-
-# Create a tensor and perform a simple operation on the GPU
-if torch.cuda.is_available():
-    device = torch.device('cuda')
-    x = torch.rand(5, 5).to(device)  # Move tensor to GPU
-    y = torch.rand(5, 5).to(device)
-    z = x + y  # Perform a simple operation
-    print("Operation successfully performed on GPU.")
-else:
-    print("CUDA is not available, operation will fall back to CPU.")
  
 hf_token = os.getenv("HF_TOKEN")
 print('hf_token', hf_token)
 login(token=hf_token)
 
 # Clear cache by deleting the model folder from cache
-cache_dir = os.path.expanduser("~/.cache/huggingface")
-shutil.rmtree(cache_dir, ignore_errors=True)
-model_save_path = "fine-tuned-mistral"
-if os.path.exists(model_save_path):
-    shutil.rmtree(model_save_path)
-    print(f"Model saved at {model_save_path} deleted.")
+# cache_dir = os.path.expanduser("~/.cache/huggingface")
+# shutil.rmtree(cache_dir, ignore_errors=True)
+# model_save_path = "fine-tuned-mistral"
+# if os.path.exists(model_save_path):
+#     shutil.rmtree(model_save_path)
+#     print(f"Model saved at {model_save_path} deleted.")
 
 
 print('Cude is available: ', torch.cuda.is_available())  # Should return True if CUDA is available
@@ -109,17 +99,8 @@ lora_config = LoraConfig(
 )
 
 # Wrap model with LoRA
-model = get_peft_model(model, lora_config)
+# model = get_peft_model(model, lora_config)
 print('printing self aten')
-model.print_trainable_parameters()
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        print(f"Trainable parameter: {name}, shape: {param.shape}")
-
-print('SEPRATIOR')
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        print(f"Gradient exists for {name}: {param.grad is not None}")
 
 inputs = tokenizer("Sample input text", return_tensors="pt").to("cuda")
 outputs = model(**inputs, labels=inputs["input_ids"])
@@ -127,13 +108,6 @@ loss = outputs.loss
 loss.backward()
 
 print('BELOW')
-
-# Define a function to compute metrics (including loss)
-def compute_metrics(p):
-    predictions, labels = p
-    preds = predictions.argmax(axis=-1)
-    loss = p.predictions.mean()  # Assuming `predictions` includes loss as part of the output tuple
-    return {"eval_loss": loss, "accuracy": accuracy_score(labels, preds)}
 
 # function for hyperparameter tuning
 def objective(trial):
