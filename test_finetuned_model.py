@@ -5,7 +5,7 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
     try:
         # Check device
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+        print('device', device)
         # Load tokenizer and model, move model to device
         tokenizer = AutoTokenizer.from_pretrained(model_path)
         model = AutoModelForCausalLM.from_pretrained(model_path).to(device)
@@ -35,7 +35,7 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
 
 # Define model path and prompt
 model_path = "./fine-tuned-mistral-bitagent-latest"
-prompt = "Can you summarize the current state of AI research?"
+prompt = input("Please enter a prompt: ")
 
 # Test model
 response = test_finetuned_model(model_path, prompt)
