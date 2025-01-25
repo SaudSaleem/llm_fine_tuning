@@ -1,17 +1,22 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import os
 
 def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
     try:
+        # Set environment variable to suppress CUDA warnings
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use GPU ID 0, modify as needed
+
         # Check device
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print('device', device)
+        print("Device:", device)
+
         # Load tokenizer and model, move model to device
         tokenizer = AutoTokenizer.from_pretrained(model_path)
-        model = AutoModelForCausalLM.from_pretrained(model_path).to(device)
+        model = AutoModelForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True).to(device)
 
         # Tokenize input and move tensors to the same device
-        inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
+        inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
         input_ids = inputs["input_ids"].to(device)
         attention_mask = inputs["attention_mask"].to(device)
 
@@ -32,6 +37,7 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
 
     except Exception as e:
         return f"Error: {str(e)}"
+
 
 # Define model path and prompt
 model_path = "./fine-tuned-mistral-bitagent-latest"
