@@ -11,7 +11,7 @@ from huggingface_hub import HfApi, HfFolder, login
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 
 hf_token = os.getenv("HF_TOKEN")
-console.log('hf_token', hf_token)
+print('hf_token', hf_token)
 login(token=hf_token)
 
 # Clear cache by deleting the model folder from cache
