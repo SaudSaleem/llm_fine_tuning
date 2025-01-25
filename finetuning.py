@@ -188,8 +188,8 @@ trainer.train()
 
 
 # Save model and tokenizer locally
-model.save_pretrained("fine-tuned-mistral-1")
-tokenizer.save_pretrained("fine-tuned-mistral-1")
+model.save_pretrained("fine-tuned-mistral-bitagent")
+tokenizer.save_pretrained("fine-tuned-mistral-bitagent")
 
 
 

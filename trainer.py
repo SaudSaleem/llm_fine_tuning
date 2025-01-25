@@ -145,13 +145,17 @@ trainer = transformers.Trainer(
         eval_steps=25,
         do_eval=True,
         report_to="wandb",
-        run_name=f"{run_name}-{datetime.now().strftime('%Y-%m-%d-%H-%M')}"
+        run_name=f"{run_name}-{datetime.now().strftime('%Y-%m-%d-%H-%M')}",
+        load_best_model_at_end=True,
     ),
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
 
 model.config.use_cache = False
 trainer.train()
+# Save model and tokenizer locally
+model.save_pretrained("fine-tuned-mistral-bitagent-latest")
+tokenizer.save_pretrained("fine-tuned-mistral-bitagent-latest")
 
 # Step 10: Evaluation After Fine-Tuning
 base_model_id = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
