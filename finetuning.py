@@ -99,7 +99,7 @@ lora_config = LoraConfig(
 )
 
 # Wrap model with LoRA
-model = get_peft_model(model, lora_config)
+# model = get_peft_model(model, lora_config)
 print('printing self aten')
 
 # Ensure the model is in training mode
