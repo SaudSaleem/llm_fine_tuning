@@ -102,11 +102,17 @@ lora_config = LoraConfig(
 model = get_peft_model(model, lora_config)
 print('printing self aten')
 
+# Ensure the model is in training mode
+model.train()
 inputs = tokenizer("Sample input text", return_tensors="pt").to("cuda")
 outputs = model(**inputs, labels=inputs["input_ids"])
 loss = outputs.loss
 loss.backward()
 
+# Optional: Print the gradients to verify
+for name, param in model.named_parameters():
+    if param.requires_grad:
+        print(f"Gradients for {name}:", param.grad)
 print('BELOW')
 
 # function for hyperparameter tuning
