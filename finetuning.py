@@ -103,14 +103,17 @@ for name, param in model.named_parameters():
     if param.requires_grad:
         print(f"Trainable parameter: {name}, shape: {param.shape}")
 
+print('SEPRATIOR')
+for name, param in model.named_parameters():
+    if param.requires_grad:
+        print(f"Gradient exists for {name}: {param.grad is not None}")
+
 inputs = tokenizer("Sample input text", return_tensors="pt").to("cuda")
 outputs = model(**inputs, labels=inputs["input_ids"])
 loss = outputs.loss
 loss.backward()
 
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        print(f"Gradient exists for {name}: {param.grad is not None}")
+print('BELOW')
 
 # function for hyperparameter tuning
 def objective(trial):
