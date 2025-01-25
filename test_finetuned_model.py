@@ -15,7 +15,7 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
     """
     try:
         # Load the tokenizer and model
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        tokenizer = AutoTokenizer.from_pretrained('TheBloke/Mistral-7B-Instruct-v0.2-AWQ')
         model = AutoModelForCausalLM.from_pretrained(model_path)
 
         # Tokenize the input prompt

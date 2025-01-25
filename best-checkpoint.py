@@ -29,7 +29,7 @@ def find_best_checkpoint():
     for checkpoint in checkpoints:
         eval_loss = get_evaluation_loss(checkpoint)
         if eval_loss is not None:
-            print(f"Checkpoint: {checkpoint}, Eval Loss: {eval_loss}")
+            # print(f"Checkpoint: {checkpoint}, Eval Loss: {eval_loss}")
             if eval_loss < best_loss:
                 best_loss = eval_loss
                 best_checkpoint = checkpoint
