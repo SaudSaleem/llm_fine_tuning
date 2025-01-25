@@ -39,7 +39,9 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16
 )
-model = AutoModelForCausalLM.from_pretrained(base_model_id, quantization_config=bnb_config, device_map="auto")
+model = AutoModelForCausalLM.from_pretrained(base_model_id, 
+                                            #  quantization_config=bnb_config, 
+                                             device_map="auto")
 
 # Step 4: Tokenization
 tokenizer = AutoTokenizer.from_pretrained(
@@ -162,7 +164,7 @@ bnb_config = BitsAndBytesConfig(
 
 base_model = AutoModelForCausalLM.from_pretrained(
     base_model_id,
-    quantization_config=bnb_config,
+    # quantization_config=bnb_config,
     device_map="auto",
     trust_remote_code=True,
 )
