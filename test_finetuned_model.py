@@ -45,7 +45,7 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
         return f"Error: {str(e)}"
 
 # Define the path to your fine-tuned model checkpoint
-model_path = "./fine-tuned-mistral"
+model_path = "./fine-tuned-mistral-bitagent-latest"
 
 # Ask the user for a prompt
 user_prompt = input("Please enter a prompt: ")
