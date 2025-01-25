@@ -15,7 +15,7 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
     """
     try:
         # Load the tokenizer and model
-        tokenizer = AutoTokenizer.from_pretrained('TheBloke/Mistral-7B-Instruct-v0.2-AWQ')
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
         model = AutoModelForCausalLM.from_pretrained(model_path)
 
         # Tokenize the input prompt
@@ -38,7 +38,7 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
         return f"Error: {str(e)}"
 
 # Define the path to your fine-tuned model checkpoint and the example prompt
-model_path = "./mistral-bitagent-finetune/checkpoint-500"
+model_path = "./fine-tuned-mistral"
 example_prompt = "Explain the concept of AI in simple terms:"
 
 # Test the model and print the result
