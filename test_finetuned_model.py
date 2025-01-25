@@ -27,7 +27,6 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
                 max_length=max_length,
                 num_beams=num_beams,
                 no_repeat_ngram_size=2,
-                early_stopping=True,  # Stops generation when <EOS> is generated
                 temperature=0.7,      # Controls randomness (lower = more focused output)
                 top_k=50,             # Limits to top 50 tokens for each step
                 top_p=0.9,            # Nucleus sampling (only considers top 90% probable tokens)
