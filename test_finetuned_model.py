@@ -11,7 +11,7 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
     try:
         # Load tokenizer and model, move model to device
         tokenizer = AutoTokenizer.from_pretrained(model_path)
-        model = AutoModelForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True)
+        model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto", low_cpu_mem_usage=True)
         # Try moving the model to the GPU
         model = model.to(device)
 
