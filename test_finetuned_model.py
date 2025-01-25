@@ -45,7 +45,8 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=4):
 
 
 # Define model path and prompt
-model_path = "./fine-tuned-mistral-bitagent-latest"
+#model_path = "./fine-tuned-mistral-bitagent-latest"
+model_path = "saudsaleem/mistral-bitagent-latest"
 prompt = input("Please enter a prompt: ")
 
 # Test model
