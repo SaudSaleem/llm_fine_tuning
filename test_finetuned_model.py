@@ -18,19 +18,22 @@ def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
         tokenizer = AutoTokenizer.from_pretrained(model_path)
         model = AutoModelForCausalLM.from_pretrained(model_path)
 
-        # Tokenize the input prompt
-        input_ids = tokenizer.encode(prompt, return_tensors="pt")
-
+        # # Tokenize the input prompt
+        # input_ids = tokenizer.encode(prompt, return_tensors="pt")
+        # Tokenize the input with attention mask
+        inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
+        input_ids = inputs["input_ids"]
+        attention_mask = inputs["attention_mask"]
         # Generate a response
+        # Generate the response
         output = model.generate(
-                input_ids,
-                max_length=max_length,
-                num_beams=num_beams,
-                no_repeat_ngram_size=2,
-                temperature=0.7,      # Controls randomness (lower = more focused output)
-                top_k=50,             # Limits to top 50 tokens for each step
-                top_p=0.9,            # Nucleus sampling (only considers top 90% probable tokens)
-                repetition_penalty=1.2  # Penalizes repetitive phrases
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_length=max_length,
+            num_beams=num_beams,
+            pad_token_id=tokenizer.eos_token_id,  # Explicitly set pad_token_id
+            no_repeat_ngram_size=2,
+            early_stopping=True
         )
 
 
