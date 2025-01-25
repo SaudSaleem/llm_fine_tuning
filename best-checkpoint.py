@@ -36,8 +36,12 @@ def find_best_checkpoint():
 
     if best_checkpoint:
         print(f"Best Checkpoint: {best_checkpoint}, Eval Loss: {best_loss}")
+        return best_checkpoint
     else:
         print("No valid evaluation loss found in any checkpoint.")
+        return None
 
 if __name__ == "__main__":
-    find_best_checkpoint()
+    best_checkpoint_path = find_best_checkpoint()
+    if best_checkpoint_path:
+        print(f"The best checkpoint path is: {best_checkpoint_path}")
