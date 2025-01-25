@@ -149,7 +149,7 @@ def objective(trial):
     trainer.train()
     eval_results = trainer.evaluate()
     print('eval_results', eval_results)
-    return eval_results["eval_loss"]
+    return eval_results["eval_steps_per_second"]
 
 # Run Optuna Study
 study = optuna.create_study(direction="minimize")
@@ -157,7 +157,7 @@ study.optimize(objective, n_trials=10)
 
 # Get the best hyperparameters
 best_hyperparameters = study.best_params
-print(best_hyperparameters)
+print("best_hyperparameters",best_hyperparameters)
 
 # Fine-Tuning
 training_args = TrainingArguments(
