@@ -4,7 +4,7 @@ import os
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use GPU ID 0, modify as needed
 # Check device
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # print("Device:", device)
 
 def test_finetuned_model(model_path, prompt, max_length=100, num_beams=5):
