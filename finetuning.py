@@ -99,6 +99,18 @@ lora_config = LoraConfig(
 model = get_peft_model(model, lora_config)
 print('printing self aten')
 model.print_trainable_parameters()
+for name, param in model.named_parameters():
+    if param.requires_grad:
+        print(f"Trainable parameter: {name}, shape: {param.shape}")
+
+inputs = tokenizer("Sample input text", return_tensors="pt").to("cuda")
+outputs = model(**inputs, labels=inputs["input_ids"])
+loss = outputs.loss
+loss.backward()
+
+for name, param in model.named_parameters():
+    if param.requires_grad:
+        print(f"Gradient exists for {name}: {param.grad is not None}")
 
 # function for hyperparameter tuning
 def objective(trial):
