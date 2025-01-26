@@ -102,7 +102,7 @@ config = LoraConfig(
         #"gate_proj",
         # "up_proj",
         # "down_proj",
-        "lm_head",
+        # "lm_head",
     ],
     bias="none",
     lora_dropout=0.15,
