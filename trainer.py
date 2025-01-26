@@ -93,7 +93,7 @@ def print_trainable_parameters(model):
 
 config = LoraConfig(
     r=32,
-    lora_alpha=16,
+    lora_alpha=8,
     target_modules=[
         "q_proj",
         "v_proj",
@@ -101,7 +101,7 @@ config = LoraConfig(
         "o_proj"
     ],
     bias="none",
-    lora_dropout=0.05,
+    lora_dropout=0.15,
     task_type="CAUSAL_LM",
 )
 
