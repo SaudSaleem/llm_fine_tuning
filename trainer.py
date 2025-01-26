@@ -81,6 +81,7 @@ model.gradient_checkpointing_enable()
 model = prepare_model_for_kbit_training(model)
 
 for param in model.parameters():
+    param.requires_grad = True
     print(param.requires_grad)
 
 def print_trainable_parameters(model):
