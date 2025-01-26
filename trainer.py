@@ -98,7 +98,11 @@ config = LoraConfig(
         "q_proj",
         "v_proj",
         "k_proj",
-        "o_proj"
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+         "down_proj",
+         "lm_head",
     ],
     bias="none",
     lora_dropout=0.15,
