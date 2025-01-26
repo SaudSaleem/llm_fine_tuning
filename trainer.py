@@ -111,7 +111,7 @@ config = LoraConfig(
     task_type="CAUSAL_LM",
 )
 for param in model.parameters():
-    param.requires_grad = False
+    param.requires_grad = True
 model = get_peft_model(model, config)
 
 print_trainable_parameters(model)
