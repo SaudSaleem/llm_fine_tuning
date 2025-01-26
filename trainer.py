@@ -78,7 +78,6 @@ max_length = 512
 
 # Step 8: Set Up LoRA
 model.gradient_checkpointing_enable()
-model = prepare_model_for_kbit_training(model)
 
 def print_trainable_parameters(model):
     trainable_params = 0
@@ -92,19 +91,14 @@ def print_trainable_parameters(model):
     )
 
 config = LoraConfig(
-    r=32,
-    lora_alpha=8,
-    target_modules=[
-        "q_proj",
-        "v_proj",
-        "k_proj",
-        "o_proj"
-    ],
+   lora_alpha=16,
+    lora_dropout=0.1,
+    r=64,
     bias="none",
-    lora_dropout=0.15,
-    task_type="CAUSAL_LM",
+    task_type="CAUSAL_LM"
 )
 
+model = prepare_model_for_kbit_training(model)
 model = get_peft_model(model, config)
 print_trainable_parameters(model)
 
