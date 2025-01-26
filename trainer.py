@@ -102,7 +102,7 @@ config = LoraConfig(
         #"gate_proj",
         # "up_proj",
         # "down_proj",
-        # "lm_head",
+        "lm_head",
     ],
     bias="none",
     lora_dropout=0.15,
@@ -153,7 +153,7 @@ trainer = transformers.Trainer(
 model.config.use_cache = False
 trainer.train()
 # Save model and tokenizer locally
-output_dir = "fine-tuned-mistral-bitagent-latest-1"
+output_dir = "fine-tuned-mistral-bitagent-latest"
 model.save_pretrained(output_dir)
 tokenizer.save_pretrained(output_dir)
 
