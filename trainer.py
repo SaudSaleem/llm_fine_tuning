@@ -138,7 +138,7 @@ trainer = transformers.Trainer(
         optim="paged_adamw_8bit",
         logging_steps=25,
         logging_dir="./logs",
-        save_strategy="steps",
+        save_strategy="no",
         save_steps=25,
         evaluation_strategy="steps",
         eval_steps=25,
@@ -147,7 +147,6 @@ trainer = transformers.Trainer(
         run_name=f"{run_name}-{datetime.now().strftime('%Y-%m-%d-%H-%M')}",
         load_best_model_at_end=True,
         save_total_limit= 1,
-        save_strategy="no",
     ),
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
