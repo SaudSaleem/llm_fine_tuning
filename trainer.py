@@ -94,7 +94,7 @@ def print_trainable_parameters(model):
     print(
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
     )
-print_trainable_parameters(model)
+# print_trainable_parameters(model)
 
 config = LoraConfig(
     r=8,
