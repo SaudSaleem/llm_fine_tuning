@@ -2,7 +2,7 @@ import os
 import json
 
 # Path to the directory containing checkpoints
-CHECKPOINT_DIR = "./mistral-bitagent-finetune"
+CHECKPOINT_DIR = "saud/llm_fine_tuning/mistral-TheBloke/Mistral-7B-Instruct-v0.2-AWQ-bitagent-finetune"
 
 # Function to get evaluation loss from trainer_state.json
 def get_evaluation_loss(checkpoint_path):
