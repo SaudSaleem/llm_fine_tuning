@@ -111,8 +111,12 @@ config = LoraConfig(
     task_type="CAUSAL_LM",
 )
 model = get_peft_model(model, config)
-for param in model.parameters():
-    param.requires_grad = True
+for name, param in model.named_parameters():
+    if "lora" in name:  # Adjust for your specific LoRA implementation
+        print('LOTA FOUND', param)
+        param.requires_grad = True
+# for param in model.parameters():
+#     param.requires_grad = True
 print_trainable_parameters(model)
 
 # Step 9: Set up Trainer
