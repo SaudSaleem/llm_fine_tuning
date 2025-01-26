@@ -3,7 +3,7 @@ import os
 from datasets import Dataset
 import pandas as pd
 from huggingface_hub import notebook_login, login
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, AutoConfig
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 import transformers
 from datetime import datetime
@@ -23,13 +23,12 @@ train_test_split = dataset.train_test_split(test_size=0.2, seed=42)
 train_dataset = train_test_split["train"]
 val_dataset = train_test_split["test"]
 
-print("train dataset",train_dataset[0])
+print("train dataset", train_dataset[0])
 
 hf_token = os.getenv("HF_TOKEN")
 print('hf_token', hf_token)
 login(token=hf_token)
 # notebook_login()
-
 
 
 base_model_id = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
@@ -154,32 +153,46 @@ trainer = transformers.Trainer(
 model.config.use_cache = False
 trainer.train()
 # Save model and tokenizer locally
-model.save_pretrained("fine-tuned-mistral-bitagent-latest")
-tokenizer.save_pretrained("fine-tuned-mistral-bitagent-latest")
+# output_dir = "fine-tuned-mistral-bitagent-latest"
+model.save_pretrained(output_dir)
+tokenizer.save_pretrained(output_dir)
+
+# Merge LoRA weights into the base model for full model export
+print("Merging LoRA weights into the base model for full model export...")
+merged_model = PeftModel.from_pretrained(model, output_dir)  # Load base model + LoRA
+merged_model = merged_model.merge_and_unload()  # Merge LoRA weights into the base model
+merged_model.save_pretrained(output_dir)  # Save the full model as `pytorch_model.bin`
+
+# Save the config for the merged model
+config = AutoConfig.from_pretrained(output_dir)
+config.save_pretrained(output_dir)
+# Verification
+print(f"Fine-tuned model saved to {output_dir} with the following files:")
+print(os.listdir(output_dir))
 
 # Step 10: Evaluation After Fine-Tuning
-base_model_id = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16
-)
+# base_model_id = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
+# bnb_config = BitsAndBytesConfig(
+#     load_in_4bit=True,
+#     bnb_4bit_use_double_quant=True,
+#     bnb_4bit_quant_type="nf4",
+#     bnb_4bit_compute_dtype=torch.bfloat16
+# )
 
-base_model = AutoModelForCausalLM.from_pretrained(
-    base_model_id,
-    # quantization_config=bnb_config,
-    device_map="auto",
-    trust_remote_code=True,
-)
+# base_model = AutoModelForCausalLM.from_pretrained(
+#     base_model_id,
+#     # quantization_config=bnb_config,
+#     device_map="auto",
+#     trust_remote_code=True,
+# )
 
-eval_tokenizer = AutoTokenizer.from_pretrained(base_model_id, add_bos_token=True, trust_remote_code=True)
+# eval_tokenizer = AutoTokenizer.from_pretrained(base_model_id, add_bos_token=True, trust_remote_code=True)
 
-eval_prompt = " The following is a note by Eevee the Dog, which doesn't share anything too personal: # "
-model_input = eval_tokenizer(eval_prompt, return_tensors="pt").to("cuda")
+# eval_prompt = " The following is a note by Eevee the Dog, which doesn't share anything too personal: # "
+# model_input = eval_tokenizer(eval_prompt, return_tensors="pt").to("cuda")
 
-ft_model = PeftModel.from_pretrained(base_model, "mistral-journal-finetune/checkpoint-300")
+# ft_model = PeftModel.from_pretrained(base_model, "mistral-journal-finetune/checkpoint-300")
 
-ft_model.eval()
-with torch.no_grad():
-    print(eval_tokenizer.decode(ft_model.generate(**model_input, max_new_tokens=100, repetition_penalty=1.15)[0], skip_special_tokens=True))
+# ft_model.eval()
+# with torch.no_grad():
+#     print(eval_tokenizer.decode(ft_model.generate(**model_input, max_new_tokens=100, repetition_penalty=1.15)[0], skip_special_tokens=True))
