@@ -146,6 +146,8 @@ trainer = transformers.Trainer(
         report_to="wandb",
         run_name=f"{run_name}-{datetime.now().strftime('%Y-%m-%d-%H-%M')}",
         load_best_model_at_end=True,
+        save_total_limit= 1,
+        save_strategy="no",
     ),
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
@@ -153,13 +155,13 @@ trainer = transformers.Trainer(
 model.config.use_cache = False
 trainer.train()
 # Save model and tokenizer locally
-output_dir = "fine-tuned-mistral-bitagent-latest"
+output_dir = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 model.save_pretrained(output_dir)
 tokenizer.save_pretrained(output_dir)
 
 # Load the configuration from the fine-tuned model and save it to the same directory
-config = AutoConfig.from_pretrained(output_dir)
-config.save_pretrained(output_dir)
+# config = AutoConfig.from_pretrained(output_dir)
+# config.save_pretrained(output_dir)
 # Verification
 print(f"Fine-tuned model saved to {output_dir} with the following files:")
 print(os.listdir(output_dir))
