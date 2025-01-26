@@ -99,11 +99,11 @@ config = LoraConfig(
     target_modules=[
         "q_proj",
         "v_proj",
-        "k_proj",
-        "o_proj",
-        "gate_proj",
-        "up_proj",
-        "down_proj",
+        # "k_proj",
+        # "o_proj",
+        # "gate_proj",
+        # "up_proj",
+        # "down_proj",
         # "lm_head",
     ],
     bias="none",
@@ -112,12 +112,7 @@ config = LoraConfig(
 )
 
 model = get_peft_model(model, config)
-# Freeze all layers first
 for param in model.parameters():
-    param.requires_grad = False
-
-# Unfreeze specific layers for fine-tuning (e.g., LoRA adapter)
-for param in model.lora.parameters():
     param.requires_grad = True
 print_trainable_parameters(model)
 
