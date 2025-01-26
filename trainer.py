@@ -4,10 +4,10 @@ from datasets import Dataset
 import pandas as pd
 from huggingface_hub import notebook_login, login
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, AutoConfig
-# from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
+from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 import transformers
 from datetime import datetime
-# from peft import PeftModel
+from peft import PeftModel
 
 
 
@@ -78,7 +78,7 @@ max_length = 512
 
 # Step 8: Set Up LoRA
 model.gradient_checkpointing_enable()
-# model = prepare_model_for_kbit_training(model)
+model = prepare_model_for_kbit_training(model)
 
 def print_trainable_parameters(model):
     trainable_params = 0
@@ -91,26 +91,20 @@ def print_trainable_parameters(model):
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
     )
 
-# config = LoraConfig(
-#     r=32,
-#     lora_alpha=64,
-#     target_modules=[
-#         "q_proj",
-#         "k_proj",
-#         "v_proj",
-#         "o_proj",
-#         "gate_proj",
-#         "up_proj",
-#         "down_proj",
-#         "lm_head",
-#     ],
-#     bias="none",
-#     lora_dropout=0.05,
-#     task_type="CAUSAL_LM",
-# )
+config = LoraConfig(
+    r=16,
+    lora_alpha=16,
+    target_modules=[
+        "q_proj",
+        "v_proj"
+    ],
+    bias="none",
+    lora_dropout=0.05,
+    task_type="CAUSAL_LM",
+)
 
-# model = get_peft_model(model, config)
-# print_trainable_parameters(model)
+model = get_peft_model(model, config)
+print_trainable_parameters(model)
 
 # Step 9: Set up Trainer
 if torch.cuda.device_count() > 1:
@@ -157,8 +151,7 @@ trainer.train()
 model.save_pretrained(output_dir)
 tokenizer.save_pretrained(output_dir)
 
-
-# Save the config for the merged model
+# Load the configuration from the fine-tuned model and save it to the same directory
 config = AutoConfig.from_pretrained(output_dir)
 config.save_pretrained(output_dir)
 # Verification
