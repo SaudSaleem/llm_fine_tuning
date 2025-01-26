@@ -92,7 +92,7 @@ def print_trainable_parameters(model):
     )
 
 config = LoraConfig(
-    r=8,
+    r=32,
     lora_alpha=16,
     target_modules=[
         "q_proj",
