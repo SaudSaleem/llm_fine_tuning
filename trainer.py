@@ -112,9 +112,13 @@ config = LoraConfig(
 )
 
 model = get_peft_model(model, config)
+# Freeze all layers first
 for param in model.parameters():
+    param.requires_grad = False
+
+# Unfreeze specific layers for fine-tuning (e.g., LoRA adapter)
+for param in model.lora.parameters():
     param.requires_grad = True
-    print(param.requires_grad)
 print_trainable_parameters(model)
 
 # Step 9: Set up Trainer
