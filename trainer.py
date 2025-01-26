@@ -92,17 +92,17 @@ def print_trainable_parameters(model):
     )
 
 config = LoraConfig(
-    r=16,
+    r=8,
     lora_alpha=8,
     target_modules=[
         "q_proj",
         "v_proj",
-        "k_proj",
-        "o_proj",
+        # "k_proj",
+        # "o_proj",
         #"gate_proj",
         # "up_proj",
         # "down_proj",
-        "lm_head",
+        # "lm_head",
     ],
     bias="none",
     lora_dropout=0.15,
@@ -153,7 +153,7 @@ trainer = transformers.Trainer(
 model.config.use_cache = False
 trainer.train()
 # Save model and tokenizer locally
-# output_dir = "fine-tuned-mistral-bitagent-latest"
+output_dir = "fine-tuned-mistral-bitagent-latest-1"
 model.save_pretrained(output_dir)
 tokenizer.save_pretrained(output_dir)
 
