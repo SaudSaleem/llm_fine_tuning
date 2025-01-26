@@ -96,7 +96,9 @@ config = LoraConfig(
     lora_alpha=16,
     target_modules=[
         "q_proj",
-        "v_proj"
+        "v_proj",
+        "k_proj",
+        "o_proj"
     ],
     bias="none",
     lora_dropout=0.05,
