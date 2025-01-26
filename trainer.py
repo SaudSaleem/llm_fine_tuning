@@ -112,10 +112,8 @@ config = LoraConfig(
 )
 model = get_peft_model(model, config)
 for name, param in model.named_parameters():
-    if "lora" in name:  # Adjust for your specific LoRA implementation
-        print('LOTA FOUND', param)
+    if "lm_head" in name:
         param.requires_grad = True
-# for param in model.parameters():
 #     param.requires_grad = True
 print_trainable_parameters(model)
 
