@@ -90,6 +90,12 @@ def print_trainable_parameters(model):
     print(
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
     )
+for name, param in model.named_parameters():
+    if not param.requires_grad:
+        print(f"{name} is frozen.")
+
+for param in model.model.lm_head.parameters():
+    param.requires_grad = True
 
 config = LoraConfig(
     r=8,
