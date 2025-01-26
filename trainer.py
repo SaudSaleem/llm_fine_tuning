@@ -80,9 +80,6 @@ max_length = 512
 model.gradient_checkpointing_enable()
 model = prepare_model_for_kbit_training(model)
 
-for param in model.parameters():
-    param.requires_grad = True
-    print(param.requires_grad)
 
 def print_trainable_parameters(model):
     trainable_params = 0
@@ -115,6 +112,9 @@ config = LoraConfig(
 )
 
 model = get_peft_model(model, config)
+for param in model.parameters():
+    param.requires_grad = True
+    print(param.requires_grad)
 print_trainable_parameters(model)
 
 # Step 9: Set up Trainer
