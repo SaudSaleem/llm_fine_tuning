@@ -80,6 +80,9 @@ max_length = 512
 model.gradient_checkpointing_enable()
 model = prepare_model_for_kbit_training(model)
 
+for param in model.parameters():
+    print(param.requires_grad)
+
 def print_trainable_parameters(model):
     trainable_params = 0
     all_param = 0
@@ -90,7 +93,7 @@ def print_trainable_parameters(model):
     print(
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
     )
-
+print_trainable_parameters(model)
 
 config = LoraConfig(
     r=8,
