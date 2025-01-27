@@ -163,8 +163,8 @@ model.save_pretrained(output_dir)
 tokenizer.save_pretrained(output_dir)
 
 # Load the configuration from the fine-tuned model and save it to the same directory
-# config = AutoConfig.from_pretrained(output_dir)
-# config.save_pretrained(output_dir)
+config = AutoConfig.from_pretrained(output_dir)
+config.save_pretrained(output_dir)
 # Verification
 print(f"Fine-tuned model saved to {output_dir} with the following files:")
 print(os.listdir(output_dir))
