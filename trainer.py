@@ -27,7 +27,7 @@ import transformers
 
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
-DATASET_PATH = "bitAgent1.csv"
+DATASET_PATH = "bitAgent.csv"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
@@ -247,5 +247,5 @@ def generate_tool_call(query, device="cuda"):
 
 # Example usage
 if __name__ == "__main__":
-    tool_call = generate_tool_call("play Johnny Johnny Yes papa")
-    print(json.dumps(tool_call, indent=2))
+    # tool_call = generate_tool_call("play Johnny Johnny Yes papa")
+    # print(json.dumps(tool_call, indent=2))
