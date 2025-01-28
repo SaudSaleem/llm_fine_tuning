@@ -78,7 +78,7 @@ def sample_and_save_datasets(output_dir="bitagent.data/samples", sample_size=100
     try:
         glaive_ds = huggingface_loader("glaiveai/glaive-function-calling-v2")
         glaive_df = pd.DataFrame(glaive_ds)
-        glaive_sample = glaive_df.sample(n=min(10000, len(glaive_df)))
+        glaive_sample = glaive_df.sample(n=min(100000, len(glaive_df)))
         glaive_sample.to_csv(f"{output_dir}/glaive_sample.csv", index=False)
         logger.info(f"Saved Glaive sample to {output_dir}/glaive_sample.csv")
     except Exception as e:
