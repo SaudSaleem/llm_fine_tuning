@@ -28,7 +28,7 @@ import transformers
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
 DATASET_PATH = "bitAgent.csv"
-OUTPUT_DIR = "/path/to/fine-tuned-model"
+OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 # --- JSON RESPONSE STOPPING CRITERIA ---
@@ -163,8 +163,8 @@ training_args = TrainingArguments(
     num_train_epochs=5,
     learning_rate=2e-5,
     optim="paged_adamw_32bit",
-    logging_steps=20,
-    evaluation_strategy="epoch",
+    logging_steps=10,
+    eval_strategy="epoch",
     eval_steps=100,
     save_strategy="epoch",
     load_best_model_at_end=True,
