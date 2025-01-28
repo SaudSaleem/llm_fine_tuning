@@ -53,7 +53,7 @@ model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
     # quantization_config=bnb_config,
     device_map="auto",
-    torch_dtype=torch.bfloat16
+    # torch_dtype=torch.bfloat16
 )
 
 tokenizer = AutoTokenizer.from_pretrained(
