@@ -198,7 +198,7 @@ def compute_metrics(eval_pred):
     # Decode predictions
     decoded = tokenizer.batch_decode(preds, skip_special_tokens=True)
     valid = sum(validate_json_output(d) for d in decoded) / len(decoded)
-    
+    print('accuracy SAUD SALEM', valid)
     return {"json_accuracy": valid}
 
 # --- TRAINER ---
