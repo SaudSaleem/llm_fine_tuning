@@ -139,8 +139,8 @@ peft_config = LoraConfig(
     lora_dropout=0.05,
     task_type="CAUSAL_LM",
 )
-model = get_peft_model(model, peft_config)
-print_trainable_parameters(model)
+# model = get_peft_model(model, peft_config)
+# print_trainable_parameters(model)
 # --- METRICS CALCULATION ---
 def compute_metrics(p):
     logits = p.predictions
@@ -272,4 +272,4 @@ with torch.no_grad():
         generation_config=generation_config
     )
     
-print(tokenizer.decode(output[0], skip_special_tokens=True))
+print("ans 123",tokenizer.decode(output[0], skip_special_tokens=True))
