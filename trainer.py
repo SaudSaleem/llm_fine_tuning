@@ -96,7 +96,7 @@ model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
     # quantization_config=bnb_config,
     device_map="auto",
-    attn_implementation="flash_attention_2"
+    # attn_implementation="flash_attention_2"
 )
 
 tokenizer = AutoTokenizer.from_pretrained(
