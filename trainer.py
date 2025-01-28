@@ -111,6 +111,17 @@ tokenized_train = train_test_split["train"].map(preprocess_function)
 tokenized_val = train_test_split["test"].map(preprocess_function)
 
 # --- LORA CONFIGURATION ---
+def print_trainable_parameters(model):
+    trainable_params = 0
+    all_param = 0
+    for _, param in model.named_parameters():
+        all_param += param.numel()
+        if param.requires_grad:
+            trainable_params += param.numel()
+    print(
+        f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
+    )
+
 model = prepare_model_for_kbit_training(model)
 peft_config = LoraConfig(
     r=16,
@@ -129,7 +140,7 @@ peft_config = LoraConfig(
     task_type="CAUSAL_LM",
 )
 model = get_peft_model(model, peft_config)
-
+print_trainable_parameters(model)
 # --- METRICS CALCULATION ---
 def compute_metrics(p):
     logits = p.predictions
@@ -155,7 +166,7 @@ def compute_metrics(p):
     
     # Calculate accuracy
     acc = sum([1 for p, l in zip(pred_jsons, label_jsons) if p == l])/len(pred_jsons)
-    
+    print('accuracy', acc)
     return {"accuracy": acc}
 
 # --- TRAINING SETUP ---
@@ -168,7 +179,7 @@ training_args = TrainingArguments(
     bf16=True,
     optim="paged_adamw_32bit",
     logging_steps=50,
-    evaluation_strategy="epoch",
+    eval_strategy="epoch",
     save_strategy="epoch",
     load_best_model_at_end=True,
     metric_for_best_model="eval_loss",
@@ -217,20 +228,40 @@ config.save_pretrained(OUTPUT_DIR)
 print(f"Original model saved to {OUTPUT_DIR}")
 # print(f"Quantized model saved to {QUANT_DIR}")
 # print("Quantized directory contents:", os.listdir(QUANT_DIR))
-print(os.listdir(OUTPUT_DIR))
+# print(os.listdir(OUTPUT_DIR))
+try:
+    eval_results = trainer.evaluate()
+    print(f"Validation Accuracy: {eval_results['eval_accuracy'] * 100:.2f}%")
+except Exception as e:
+    print('Error:', e)
 
 # --- EVALUATION ---
 generation_config = model.generation_config
 generation_config.max_new_tokens = 256
-generation_config.temperature = 0.01
+generation_config.temperature = 0
 generation_config.top_p = 0.95
-generation_config.repetition_penalty = 1.15
+generation_config.repetition_penalty = 1.2
 
 eval_prompt = "Distance from Los Angeles to New York"
 model_input = tokenizer(
-    f"[INST] {eval_prompt} [/INST]\n", 
+    f"""[INST] 
+Provide function name and arguments from the provided data first. 
+If not found, answer from general knowledge. 
+
+Example 1 (from provided data):
+User: "Calculate distance between cities"
+Assistant: From provided data: `calculate_distance(destination="New York", origin="Los Angeles")`
+
+Example 2 (fallback to general knowledge):
+User: "Distance from Earth to Mars"
+Assistant: [No provided data] From general knowledge: Average distance is 140 million miles.
+
+Now answer:
+Question: {eval_prompt} [/INST]
+""",
     return_tensors="pt"
 ).to("cuda")
+
 
 ft_model = PeftModel.from_pretrained(model, OUTPUT_DIR)
 ft_model.eval()
