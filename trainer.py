@@ -74,7 +74,7 @@ def format_training_example(row):
         "assistant": f"{row['output']}</s>"
     }
 
-dataset = Dataset.from_pandas(df.map(format_training_example))
+dataset = Dataset.from_pandas(df.apply(format_training_example, axis=1))
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
 # --- MODEL SETUP ---
