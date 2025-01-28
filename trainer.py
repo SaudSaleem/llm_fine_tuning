@@ -39,7 +39,7 @@ login(token=HF_TOKEN)
 df = pd.read_csv(DATASET_PATH)
 df = df.rename(columns={"input": "user", "output": "assistant"})
 dataset = Dataset.from_pandas(df)
-dataset = dataset.slice(0, 1000)
+dataset = dataset.select(range(1000))
 train_test_split = dataset.train_test_split(test_size=0.2, seed=42)
 
 # --- MODEL AND TOKENIZER SETUP ---
