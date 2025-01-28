@@ -246,6 +246,6 @@ def generate_tool_call(query, device="cuda"):
         return {"error": "Invalid JSON format"}
 
 # Example usage
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # tool_call = generate_tool_call("play Johnny Johnny Yes papa")
     # print(json.dumps(tool_call, indent=2))
