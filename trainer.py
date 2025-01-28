@@ -1,7 +1,7 @@
 import torch
 import os
 import json
-import numpy as np
+import re
 from datasets import Dataset
 import pandas as pd
 from huggingface_hub import login
@@ -12,7 +12,9 @@ from transformers import (
     TrainingArguments,
     Trainer,
     DataCollatorForLanguageModeling,
-    AutoConfig
+    AutoConfig,
+    StoppingCriteria,
+    StoppingCriteriaList
 )
 from peft import (
     prepare_model_for_kbit_training,
@@ -21,27 +23,61 @@ from peft import (
     PeftModel
 )
 import transformers
-# from awq import AutoAWQForCausalLM
-from datetime import datetime
-from sklearn.metrics import accuracy_score
 
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
 DATASET_PATH = "bitAgent.csv"
-OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
-QUANT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-quantized"
+OUTPUT_DIR = "/path/to/fine-tuned-model"
 HF_TOKEN = os.getenv("HF_TOKEN")
+
+# --- JSON RESPONSE STOPPING CRITERIA ---
+class JsonStopCriteria(StoppingCriteria):
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+        self.stack = []
+        self.brace_count = 0
+        
+    def __call__(self, input_ids, scores, **kwargs):
+        last_token = input_ids[0][-1]
+        decoded = self.tokenizer.decode([last_token])
+        
+        if decoded == '{':
+            self.brace_count += 1
+            self.stack.append('}')
+        elif decoded == '[':
+            self.stack.append(']')
+        elif decoded in ['}', ']']:
+            if self.stack and self.stack[-1] == decoded:
+                self.stack.pop()
+                if decoded == '}': 
+                    self.brace_count -= 1
+                    
+        # Stop when JSON structure is complete
+        if self.brace_count == 0 and len(self.stack) == 0:
+            return True
+        return False
 
 # --- LOGIN TO HUGGINGFACE ---
 login(token=HF_TOKEN)
 
-# --- LOAD AND PREPARE DATASET ---
+# --- LOAD AND PREPROCESS DATASET ---
 df = pd.read_csv(DATASET_PATH)
-df = df.rename(columns={"input": "user", "output": "assistant"})
-dataset = Dataset.from_pandas(df)
-train_test_split = dataset.train_test_split(test_size=0.2, seed=42)
 
-# --- MODEL AND TOKENIZER SETUP ---
+# Add system prompt to training data
+def format_training_example(row):
+    system_prompt = """Respond ONLY with valid JSON containing tool calls. Example:
+    User: play Happy Song
+    Assistant: [{"play_song": {"query": "Happy Song"}}]"""
+    
+    return {
+        "user": f"[INST] {system_prompt}\n\nInput: {row['input']} [/INST]",
+        "assistant": f"{row['output']}</s>"
+    }
+
+dataset = Dataset.from_pandas(df.map(format_training_example))
+train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
+
+# --- MODEL SETUP ---
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_use_double_quant=True,
@@ -51,9 +87,9 @@ bnb_config = BitsAndBytesConfig(
 
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
-    # quantization_config=bnb_config,
+    quantization_config=bnb_config,
     device_map="auto",
-    # torch_dtype=torch.bfloat16
+    attn_implementation="flash_attention_2"
 )
 
 tokenizer = AutoTokenizer.from_pretrained(
@@ -64,201 +100,144 @@ tokenizer = AutoTokenizer.from_pretrained(
 )
 tokenizer.pad_token = tokenizer.eos_token
 
-# --- DATA PREPROCESSING ---
-# Add this before preprocessing to analyze your data
-def analyze_lengths(dataset):
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    lengths = []
-    for example in dataset:
-        text = f"[INST] {example['user']} [/INST]\n{example['assistant']}</s>"
-        tokens = tokenizer(text)["input_ids"]
-        lengths.append(len(tokens))
-    
-    print(f"Average length: {np.mean(lengths):.1f}")
-    print(f"95th percentile: {np.percentile(lengths, 95):.1f}")
-    print(f"Max length: {max(lengths)}")
-
-# analyze_lengths(dataset)
-
-def preprocess_function(example):
-    # Format with Mistral's chat template
-    text = f"[INST] {example['user']} [/INST]\n{example['assistant']}</s>"
-    
-    # Tokenize
-    tokens = tokenizer(
-        text,
-        max_length=768,
+# --- DATA PROCESSING ---
+def preprocess_function(examples):
+    tokenized = tokenizer(
+        examples["user"],
+        text_target=examples["assistant"],
+        max_length=512,
         truncation=True,
         padding="max_length",
     )
     
-    # Create labels mask (only calculate loss on assistant response)
-    input_part = tokenizer.encode(
-        f"[INST] {example['user']} [/INST]\n", 
-        add_special_tokens=False,
-        max_length=768,
-        truncation=True
-    )
-    labels = [-100] * len(input_part) + tokens.input_ids[len(input_part):]
+    # Mask user input in labels
+    user_tokens = tokenizer(examples["user"], add_special_tokens=False)["input_ids"]
+    labels = [-100]*len(user_tokens) + tokenized["labels"][len(user_tokens):]
     
     return {
-        "input_ids": tokens.input_ids,
-        "attention_mask": tokens.attention_mask,
+        "input_ids": tokenized["input_ids"],
+        "attention_mask": tokenized["attention_mask"],
         "labels": labels
     }
 
-tokenized_train = train_test_split["train"].map(preprocess_function)
-tokenized_val = train_test_split["test"].map(preprocess_function)
+tokenized_ds = train_test_split.map(
+    preprocess_function,
+    batched=True,
+    batch_size=128
+)
 
-# --- LORA CONFIGURATION ---
-def print_trainable_parameters(model):
-    trainable_params = 0
-    all_param = 0
-    for _, param in model.named_parameters():
-        all_param += param.numel()
-        if param.requires_grad:
-            trainable_params += param.numel()
-    print(
-        f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
-    )
-
+# --- LORA CONFIG ---
 model = prepare_model_for_kbit_training(model)
 peft_config = LoraConfig(
     r=32,
     lora_alpha=64,
     target_modules=[
         "q_proj",
+        "k_proj", 
         "v_proj",
-        "k_proj",
         "o_proj",
         "gate_proj",
         "up_proj",
         "down_proj"
     ],
-    bias="none",
-    lora_dropout=0.05,
+    bias="lora_only",
+    lora_dropout=0.1,
     task_type="CAUSAL_LM",
+    modules_to_save=["lm_head"]
 )
 model = get_peft_model(model, peft_config)
-print_trainable_parameters(model)
-# --- METRICS CALCULATION ---
-def compute_metrics(p):
-    logits = p.predictions
-    labels = p.label_ids
-    
-    # Replace -100 with pad token id
-    labels = np.where(labels == -100, tokenizer.pad_token_id, labels)
-    
-    # Decode predictions and labels
-    preds = np.argmax(logits, axis=-1)
-    decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
-    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-    
-    # Extract JSON parts
-    def extract_json(text):
-        try:
-            return json.loads(text.split("[/INST]\n")[-1].strip())
-        except:
-            return {}
-    
-    pred_jsons = [extract_json(p) for p in decoded_preds]
-    label_jsons = [extract_json(l) for l in decoded_labels]
-    
-    # Calculate accuracy
-    acc = sum([1 for p, l in zip(pred_jsons, label_jsons) if p == l])/len(pred_jsons)
-    print('accuracy saud SALEEM', acc['accuracy'])
-    return {"accuracy": acc}
 
-# --- TRAINING SETUP ---
+# --- TRAINING ARGS ---
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
     per_device_train_batch_size=2,
-    gradient_accumulation_steps=2,
+    gradient_accumulation_steps=4,
     num_train_epochs=5,
-    learning_rate=1e-5,
-    bf16=True,
+    learning_rate=2e-5,
     optim="paged_adamw_32bit",
-    logging_steps=50,
-    eval_strategy="epoch",
+    logging_steps=20,
+    evaluation_strategy="steps",
+    eval_steps=100,
     save_strategy="epoch",
     load_best_model_at_end=True,
-    metric_for_best_model="eval_loss",
-    greater_is_better=False,
-    warmup_ratio=0.1,
-    max_grad_norm=0.3,
+    bf16=True,
+    max_grad_norm=0.5,
     report_to="none",
     gradient_checkpointing=True,
+    generation_config={
+        "max_new_tokens": 256,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "repetition_penalty": 1.15
+    }
 )
 
+# --- VALIDATION ---
+def validate_json_output(text):
+    try:
+        json_str = re.search(r'\[.*\]', text, re.DOTALL).group()
+        parsed = json.loads(json_str)
+        assert isinstance(parsed, list)
+        assert all(isinstance(item, dict) for item in parsed)
+        return True
+    except:
+        return False
+
+def compute_metrics(eval_pred):
+    preds = eval_pred.predictions.argmax(-1)
+    labels = eval_pred.label_ids
+    
+    # Decode predictions
+    decoded = tokenizer.batch_decode(preds, skip_special_tokens=True)
+    valid = sum(validate_json_output(d) for d in decoded) / len(decoded)
+    
+    return {"json_accuracy": valid}
+
+# --- TRAINER ---
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=tokenized_train,
-    eval_dataset=tokenized_val,
+    train_dataset=tokenized_ds["train"],
+    eval_dataset=tokenized_ds["test"],
     data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
     compute_metrics=compute_metrics,
 )
 
-# --- SAVE MODEL ---
-model = model.merge_and_unload()  # Merge LoRA adapte
+# --- TRAINING ---
+trainer.train()
 model.save_pretrained(OUTPUT_DIR)
 tokenizer.save_pretrained(OUTPUT_DIR)
-# Load the configuration from the fine-tuned model and save it to the same directory
-config = AutoConfig.from_pretrained(OUTPUT_DIR)
-config.save_pretrained(OUTPUT_DIR)
 
-# --- QUANTIZE ---
-# Load model for AWQ quantization
-# awq_model = AutoAWQForCausalLM.from_pretrained(OUTPUT_DIR)
-
-# # Define quantization config (adjust parameters as needed)
-# quant_config = {
-#     "zero_point": True,  # if supported by your AWQ version
-#     # "q_group_size": 128,
-#     "w_bit": 4,  # often required for weight bit-width
-# }
-
-# Apply quantization
-# awq_model.quantize(tokenizer, quant_config=quant_config)
-
-# Save quantized model to a separate directory
-
-# awq_model.save_quantized(QUANT_DIR)
-# tokenizer.save_pretrained(QUANT_DIR)  # save tokenizer for the quantized model
-
-print(f"Original model saved to {OUTPUT_DIR}")
-# print(f"Quantized model saved to {QUANT_DIR}")
-# print("Quantized directory contents:", os.listdir(QUANT_DIR))
-# print(os.listdir(OUTPUT_DIR))
-try:
-    eval_results = trainer.evaluate()
-    print(f"Validation Accuracy: {eval_results['eval_accuracy'] * 100:.2f}%")
-except Exception as e:
-    print('Error:', e)
-
-# --- EVALUATION ---
-generation_config = model.generation_config
-generation_config.max_new_tokens = 256
-generation_config.temperature = 0
-generation_config.top_p = 0.95
-generation_config.repetition_penalty = 1.2
-
-eval_prompt = "Distance from Los Angeles to New York"
-model_input = tokenizer(
-    f"""[INST] 
-Question: {eval_prompt} [/INST]
-""",
-    return_tensors="pt"
-).to("cuda")
-
-
-ft_model = PeftModel.from_pretrained(model, OUTPUT_DIR)
-ft_model.eval()
-
-with torch.no_grad():
-    output = ft_model.generate(
-        **model_input,
-        generation_config=generation_config
+# --- INFERENCE ---
+def generate_tool_call(query, device="cuda"):
+    system_msg = """Respond ONLY with valid JSON tool calls. Example:
+    Input: play Song Name
+    Output: [{"play_song": {"query": "Song Name"}}]"""
+    
+    prompt = f"[INST] {system_msg}\n\nInput: {query} [/INST]"
+    
+    inputs = tokenizer(prompt, return_tensors="pt").to(device)
+    stopping_criteria = StoppingCriteriaList([JsonStopCriteria(tokenizer)])
+    
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=256,
+        temperature=0.1,
+        top_p=0.95,
+        repetition_penalty=1.15,
+        stopping_criteria=stopping_criteria,
+        do_sample=False
     )
     
-print("ans 123",tokenizer.decode(output[0], skip_special_tokens=True))
+    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    json_str = re.search(r'\[.*\]', response, re.DOTALL).group()
+    
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON format"}
+
+# Example usage
+if __name__ == "__main__":
+    tool_call = generate_tool_call("play Johnny Johnny Yes papa")
+    print(json.dumps(tool_call, indent=2))
