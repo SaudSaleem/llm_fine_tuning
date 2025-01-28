@@ -11,3 +11,5 @@ wandb
 sentencepiece
 tokenizers
 scikit-learn
+numpy
+awq
