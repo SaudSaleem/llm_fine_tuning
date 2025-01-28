@@ -14,7 +14,8 @@ from transformers import (
     DataCollatorForLanguageModeling,
     AutoConfig,
     StoppingCriteria,
-    StoppingCriteriaList
+    StoppingCriteriaList,
+    GenerationConfig
 )
 from peft import (
     prepare_model_for_kbit_training,
@@ -171,12 +172,12 @@ training_args = TrainingArguments(
     max_grad_norm=0.5,
     report_to="none",
     gradient_checkpointing=True,
-    generation_config={
-        "max_new_tokens": 256,
-        "temperature": 0.7,
-        "top_p": 0.9,
-        "repetition_penalty": 1.15
-    }
+    # generation_config={
+    #     "max_new_tokens": 256,
+    #     "temperature": 0.7,
+    #     "top_p": 0.9,
+    #     "repetition_penalty": 1.15
+    # }
 )
 
 # --- VALIDATION ---
