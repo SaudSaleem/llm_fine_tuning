@@ -78,7 +78,7 @@ def analyze_lengths(dataset):
     print(f"95th percentile: {np.percentile(lengths, 95):.1f}")
     print(f"Max length: {max(lengths)}")
 
-analyze_lengths(dataset)
+# analyze_lengths(dataset)
 
 def preprocess_function(example):
     # Format with Mistral's chat template
