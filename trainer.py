@@ -87,7 +87,7 @@ def preprocess_function(example):
     # Tokenize
     tokens = tokenizer(
         text,
-        max_length=512,
+        max_length=768,
         truncation=True,
         padding="max_length",
     )
@@ -96,7 +96,7 @@ def preprocess_function(example):
     input_part = tokenizer.encode(
         f"[INST] {example['user']} [/INST]\n", 
         add_special_tokens=False,
-        max_length=512,
+        max_length=768,
         truncation=True
     )
     labels = [-100] * len(input_part) + tokens.input_ids[len(input_part):]
