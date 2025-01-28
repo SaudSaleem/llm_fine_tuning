@@ -95,7 +95,6 @@ def sample_and_save_datasets(output_dir="bitagent.data/samples", sample_size=100
 
     try:
         bfcl_ds = load_bfcl_dataset("gorilla-llm/Berkeley-Function-Calling-Leaderboard")
-        print('saud bfcl_ds', len(bfcl_ds))
         bfcl_sample = pd.DataFrame(list(islice(bfcl_ds, 100000)))
         bfcl_sample.to_csv(f"{output_dir}/bfcl_sample.csv", index=False)
         logger.info(f"Saved BFCL sample to {output_dir}/bfcl_sample.csv")
