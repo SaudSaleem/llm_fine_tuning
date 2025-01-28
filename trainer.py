@@ -21,12 +21,12 @@ from peft import (
     PeftModel
 )
 import transformers
-from awq import AutoAWQForCausalLM
+# from awq import AutoAWQForCausalLM
 from datetime import datetime
 from sklearn.metrics import accuracy_score
 
 # --- CONFIGURATION ---
-MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
+MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
 DATASET_PATH = "bitAgent.csv"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 QUANT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-quantized"
@@ -191,29 +191,32 @@ trainer = Trainer(
 # --- SAVE MODEL ---
 model.save_pretrained(OUTPUT_DIR)
 tokenizer.save_pretrained(OUTPUT_DIR)
+# Load the configuration from the fine-tuned model and save it to the same directory
+config = AutoConfig.from_pretrained(OUTPUT_DIR)
+config.save_pretrained(OUTPUT_DIR)
 
 # --- QUANTIZE ---
 # Load model for AWQ quantization
-awq_model = AutoAWQForCausalLM.from_pretrained(OUTPUT_DIR)
+# awq_model = AutoAWQForCausalLM.from_pretrained(OUTPUT_DIR)
 
-# Define quantization config (adjust parameters as needed)
-quant_config = {
-    "zero_point": True,  # if supported by your AWQ version
-    # "q_group_size": 128,
-    "w_bit": 4,  # often required for weight bit-width
-}
+# # Define quantization config (adjust parameters as needed)
+# quant_config = {
+#     "zero_point": True,  # if supported by your AWQ version
+#     # "q_group_size": 128,
+#     "w_bit": 4,  # often required for weight bit-width
+# }
 
 # Apply quantization
-awq_model.quantize(tokenizer, quant_config=quant_config)
+# awq_model.quantize(tokenizer, quant_config=quant_config)
 
 # Save quantized model to a separate directory
 
-awq_model.save_quantized(QUANT_DIR)
-tokenizer.save_pretrained(QUANT_DIR)  # save tokenizer for the quantized model
+# awq_model.save_quantized(QUANT_DIR)
+# tokenizer.save_pretrained(QUANT_DIR)  # save tokenizer for the quantized model
 
 print(f"Original model saved to {OUTPUT_DIR}")
-print(f"Quantized model saved to {QUANT_DIR}")
-print("Quantized directory contents:", os.listdir(QUANT_DIR))
+# print(f"Quantized model saved to {QUANT_DIR}")
+# print("Quantized directory contents:", os.listdir(QUANT_DIR))
 print(os.listdir(OUTPUT_DIR))
 
 # --- EVALUATION ---
