@@ -39,7 +39,6 @@ login(token=HF_TOKEN)
 df = pd.read_csv(DATASET_PATH)
 df = df.rename(columns={"input": "user", "output": "assistant"})
 dataset = Dataset.from_pandas(df)
-dataset = dataset.select(range(1000))
 train_test_split = dataset.train_test_split(test_size=0.2, seed=42)
 
 # --- MODEL AND TOKENIZER SETUP ---
@@ -110,10 +109,6 @@ def preprocess_function(example):
 
 tokenized_train = train_test_split["train"].map(preprocess_function)
 tokenized_val = train_test_split["test"].map(preprocess_function)
-for i in range(5):
-    print(f"Input IDs: {tokenized_train['input_ids'][i]}")
-    print(f"Labels: {tokenized_train['labels'][i]}")
-    print(tokenizer.decode(tokenized_train['input_ids'][i]))
 
 # --- LORA CONFIGURATION ---
 def print_trainable_parameters(model):
@@ -171,15 +166,15 @@ def compute_metrics(p):
     
     # Calculate accuracy
     acc = sum([1 for p, l in zip(pred_jsons, label_jsons) if p == l])/len(pred_jsons)
-    print('accuracy', acc)
+    print('accuracy saud SALEEM', acc['accuracy'])
     return {"accuracy": acc}
 
 # --- TRAINING SETUP ---
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
-    per_device_train_batch_size=4,
+    per_device_train_batch_size=2,
     gradient_accumulation_steps=2,
-    num_train_epochs=3,
+    num_train_epochs=5,
     learning_rate=1e-5,
     bf16=True,
     optim="paged_adamw_32bit",
@@ -195,21 +190,22 @@ training_args = TrainingArguments(
     gradient_checkpointing=True,
 )
 
-# trainer = Trainer(
-#     model=model,
-#     args=training_args,
-#     train_dataset=tokenized_train,
-#     eval_dataset=tokenized_val,
-#     data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
-#     compute_metrics=compute_metrics,
-# )
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_train,
+    eval_dataset=tokenized_val,
+    data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+    compute_metrics=compute_metrics,
+)
 
 # --- SAVE MODEL ---
-# model.save_pretrained(OUTPUT_DIR)
-# tokenizer.save_pretrained(OUTPUT_DIR)
-# # Load the configuration from the fine-tuned model and save it to the same directory
-# config = AutoConfig.from_pretrained(OUTPUT_DIR)
-# config.save_pretrained(OUTPUT_DIR)
+model = model.merge_and_unload()  # Merge LoRA adapte
+model.save_pretrained(OUTPUT_DIR)
+tokenizer.save_pretrained(OUTPUT_DIR)
+# Load the configuration from the fine-tuned model and save it to the same directory
+config = AutoConfig.from_pretrained(OUTPUT_DIR)
+config.save_pretrained(OUTPUT_DIR)
 
 # --- QUANTIZE ---
 # Load model for AWQ quantization
