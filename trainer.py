@@ -109,6 +109,10 @@ def preprocess_function(example):
 
 tokenized_train = train_test_split["train"].map(preprocess_function)
 tokenized_val = train_test_split["test"].map(preprocess_function)
+for i in range(5):
+    print(f"Input IDs: {tokenized_train['input_ids'][i]}")
+    print(f"Labels: {tokenized_train['labels'][i]}")
+    print(tokenizer.decode(tokenized_train['input_ids'][i]))
 
 # --- LORA CONFIGURATION ---
 def print_trainable_parameters(model):
@@ -124,8 +128,8 @@ def print_trainable_parameters(model):
 
 model = prepare_model_for_kbit_training(model)
 peft_config = LoraConfig(
-    r=16,
-    lora_alpha=32,
+    r=32,
+    lora_alpha=64,
     target_modules=[
         "q_proj",
         "v_proj",
@@ -139,8 +143,8 @@ peft_config = LoraConfig(
     lora_dropout=0.05,
     task_type="CAUSAL_LM",
 )
-# model = get_peft_model(model, peft_config)
-# print_trainable_parameters(model)
+model = get_peft_model(model, peft_config)
+print_trainable_parameters(model)
 # --- METRICS CALCULATION ---
 def compute_metrics(p):
     logits = p.predictions
@@ -190,21 +194,21 @@ training_args = TrainingArguments(
     gradient_checkpointing=True,
 )
 
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=tokenized_train,
-    eval_dataset=tokenized_val,
-    data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
-    compute_metrics=compute_metrics,
-)
+# trainer = Trainer(
+#     model=model,
+#     args=training_args,
+#     train_dataset=tokenized_train,
+#     eval_dataset=tokenized_val,
+#     data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+#     compute_metrics=compute_metrics,
+# )
 
 # --- SAVE MODEL ---
-model.save_pretrained(OUTPUT_DIR)
-tokenizer.save_pretrained(OUTPUT_DIR)
-# Load the configuration from the fine-tuned model and save it to the same directory
-config = AutoConfig.from_pretrained(OUTPUT_DIR)
-config.save_pretrained(OUTPUT_DIR)
+# model.save_pretrained(OUTPUT_DIR)
+# tokenizer.save_pretrained(OUTPUT_DIR)
+# # Load the configuration from the fine-tuned model and save it to the same directory
+# config = AutoConfig.from_pretrained(OUTPUT_DIR)
+# config.save_pretrained(OUTPUT_DIR)
 
 # --- QUANTIZE ---
 # Load model for AWQ quantization
@@ -245,18 +249,6 @@ generation_config.repetition_penalty = 1.2
 eval_prompt = "Distance from Los Angeles to New York"
 model_input = tokenizer(
     f"""[INST] 
-Provide function name and arguments from the provided data first. 
-If not found, answer from general knowledge. 
-
-Example 1 (from provided data):
-User: "Calculate distance between cities"
-Assistant: From provided data: `calculate_distance(destination="New York", origin="Los Angeles")`
-
-Example 2 (fallback to general knowledge):
-User: "Distance from Earth to Mars"
-Assistant: [No provided data] From general knowledge: Average distance is 140 million miles.
-
-Now answer:
 Question: {eval_prompt} [/INST]
 """,
     return_tensors="pt"
