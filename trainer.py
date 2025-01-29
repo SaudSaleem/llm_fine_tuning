@@ -2,7 +2,7 @@ import torch
 import os
 import json
 import re
-from datasets import Dataset
+from datasets import Dataset, load_metric
 import pandas as pd
 from huggingface_hub import login
 from transformers import (
@@ -27,7 +27,7 @@ import transformers
 
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
-DATASET_PATH = "bitAgent.csv"
+DATASET_PATH = "bitAgent1.csv"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
@@ -197,15 +197,40 @@ def validate_json_output(text):
     except:
         return False
 
+def extract_function_name(prediction):
+    """Extract function name from model's prediction."""
+    try:
+        parsed_pred = json.loads(prediction)
+        if isinstance(parsed_pred, list):
+            return parsed_pred[0].get("name", "")
+        elif isinstance(parsed_pred, dict):
+            return parsed_pred.get("name", "")
+    except json.JSONDecodeError:
+        return ""
+    return ""
+
 def compute_metrics(eval_pred):
-    preds = eval_pred.predictions.argmax(-1)
-    labels = eval_pred.label_ids
+    predictions, labels = eval_pred
+    metric = load_metric("accuracy")
+    f1_metric = load_metric("f1")
+    precision_metric = load_metric("precision")
+    recall_metric = load_metric("recall")
     
-    # Decode predictions
-    decoded = tokenizer.batch_decode(preds, skip_special_tokens=True)
-    valid = sum(validate_json_output(d) for d in decoded) / len(decoded)
-    print('accuracy SAUD SALEM', valid)
-    return {"json_accuracy": valid}
+    predictions = [extract_function_name(pred) for pred in predictions]
+    labels = [extract_function_name(label) for label in labels]
+    
+    accuracy = metric.compute(predictions=predictions, references=labels)
+    f1 = f1_metric.compute(predictions=predictions, references=labels, average="weighted")
+    precision = precision_metric.compute(predictions=predictions, references=labels, average="weighted")
+    recall = recall_metric.compute(predictions=predictions, references=labels, average="weighted")
+    print('accuracy', accuracy['accuracy'])
+    return {
+        "accuracy": accuracy["accuracy"],
+        "f1": f1["f1"],
+        "precision": precision["precision"],
+        "recall": recall["recall"]
+    }
+
 
 # --- TRAINER ---
 trainer = Trainer(

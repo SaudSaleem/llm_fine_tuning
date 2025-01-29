@@ -65,9 +65,7 @@ def transform_function_data(function_data, index):
     Convert function data to structured format with 'name' and 'parameters'.
     """
     try:
-        print('function_data ==> ', function_data)
         parsed_data = literal_eval(function_data)  # Convert string to Python object
-        print('parsed_data ==> ', parsed_data)
         if not isinstance(parsed_data, list) or len(parsed_data) == 0:
             print(f"⚠️ Skipping row {index}: function_data is not a list → {function_data}")
             return None
