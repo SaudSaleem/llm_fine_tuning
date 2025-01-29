@@ -120,7 +120,7 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # --- DATA PROCESSING ---
 def preprocess_function(examples):
-    print('saleem', examples['user'], examples['assistant'])
+    # print('saleem', examples['user'], examples['assistant'])
     tokenized = tokenizer(
         examples["user"],
         text_target=examples["assistant"],
@@ -133,6 +133,9 @@ def preprocess_function(examples):
     user_tokens = tokenizer(examples["user"], add_special_tokens=False)["input_ids"]
     labels = [-100]*len(user_tokens) + tokenized["labels"][len(user_tokens):]
     
+    # Decode the labels to check human-readable form
+    readable_labels = tokenizer.decode([t for t in labels if t != -100])
+    print("Human-readable labels:", readable_labels)  # Print the readable assistant response
     return {
         "input_ids": tokenized["input_ids"],
         "attention_mask": tokenized["attention_mask"],
@@ -279,10 +282,9 @@ def compute_metrics(eval_pred: EvalPrediction):
 def extract_top_function_names(text: str) -> list:
     """Simplified extractor for standardized format"""
     print('extract_top_function_names', text)
-    return text.split()
     # Match "name": "function_name" patterns
-    # functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
-    # return list(set(functions))
+    functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
+    return list(set(functions))
 
 
 
