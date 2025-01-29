@@ -5,6 +5,7 @@ import re
 from datasets import Dataset
 from evaluate import load
 import pandas as pd
+import numpy as np
 from huggingface_hub import login
 from transformers import (
     AutoTokenizer,
@@ -202,15 +203,23 @@ def extract_function_name(prediction):
     """Extract function name from model's prediction."""
     try:
         print(type(prediction), 'before')
-        prediction = prediction.tolist()  # Convert ndarray to a list
+        # Ensure it's a list, no need to convert to JSON
+        if isinstance(prediction, np.ndarray):
+            prediction = prediction.tolist()  # Convert ndarray to a list if it's a NumPy array
         print(type(prediction), 'after')
-        parsed_pred = json.loads(json.dumps(prediction))  # Convert list to JSON string, then load it
-        # parsed_pred = json.loads(prediction)
-        if isinstance(parsed_pred, list):
-            return parsed_pred[0].get("name", "")
-        elif isinstance(parsed_pred, dict):
-            return parsed_pred.get("name", "")
-    except json.JSONDecodeError:
+
+        # If prediction is a list, get the first item and check for "name"
+        if isinstance(prediction, list) and len(prediction) > 0:
+            # Check if the first element is a dict
+            if isinstance(prediction[0], dict):
+                return prediction[0].get("name", "")
+            else:
+                return ""
+        elif isinstance(prediction, dict):
+            # If prediction is a dictionary, get the "name"
+            return prediction.get("name", "")
+    except Exception as e:
+        print(f"Error: {e}")
         return ""
     return ""
 
