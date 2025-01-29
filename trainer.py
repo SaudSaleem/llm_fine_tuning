@@ -208,7 +208,7 @@ def extract_function_name(prediction):
         # Ensure it's a list, no need to convert to JSON
         if isinstance(prediction, np.ndarray):
             prediction = prediction.tolist()  # Convert ndarray to a list if it's a NumPy array
-            print('prediction.tolist()', prediction)
+            # print('prediction.tolist()', prediction)
 
         # If prediction is a list, get the first item and check for "name"
         if isinstance(prediction, list) and len(prediction) > 0:
