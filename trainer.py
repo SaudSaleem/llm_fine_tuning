@@ -85,6 +85,7 @@ formatted_df = pd.DataFrame(formatted_data)
 dataset = Dataset.from_pandas(formatted_df)
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
+print("saud",train_test_split, train_test_split['train'])
 # Print some examples from the training set
 print("Training examples:")
 for example in train_test_split["train"][:3]:  # Print first 3 examples
@@ -95,12 +96,12 @@ print("\nTest examples:")
 for example in train_test_split["test"][:3]:  # Print first 3 examples
     print(example)
 # --- MODEL SETUP ---
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16
-)
+# bnb_config = BitsAndBytesConfig(
+#     load_in_4bit=True,
+#     bnb_4bit_use_double_quant=True,
+#     bnb_4bit_quant_type="nf4",
+#     bnb_4bit_compute_dtype=torch.bfloat16
+# )
 
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
