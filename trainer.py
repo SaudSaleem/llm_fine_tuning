@@ -90,25 +90,26 @@ tokenizer.pad_token = tokenizer.eos_token
 #         "labels": labels
 #     }
 def preprocess_function(examples):
-    # Combine user and assistant into a single text
+    # Tokenize user and assistant together with special tokens
     combined_texts = [user + assistant for user, assistant in zip(examples["user"], examples["assistant"])]
-    
-    # Tokenize the combined text
     tokenized = tokenizer(
         combined_texts,
         max_length=768,
         truncation=True,
         padding="max_length",
+        add_special_tokens=True  # Ensures BOS/EOS are added
     )
     
-    # Tokenize user inputs to determine their length (without special tokens)
+    # Tokenize user alone to find actual length in combined tokens
     user_tokenized = tokenizer(examples["user"], add_special_tokens=False)
     user_lengths = [len(ids) for ids in user_tokenized["input_ids"]]
     
-    # Create labels by masking the user part
+    # Account for BOS token added at start of combined text
+    user_lengths = [len(tokenizer.encode(user, add_special_tokens=True)) - 1 for user in examples["user"]]
+    
+    # Create labels by masking user part (including BOS)
     labels = []
     for input_ids, user_len in zip(tokenized["input_ids"], user_lengths):
-        # Mask user part with -100, keep assistant part
         label = [-100] * user_len + input_ids[user_len:]
         labels.append(label)
     
@@ -161,7 +162,7 @@ training_args = TrainingArguments(
     per_device_train_batch_size=2,
     gradient_accumulation_steps=4,
     num_train_epochs=10,
-    learning_rate=1e-3,
+    learning_rate=2e-5,
     optim="paged_adamw_32bit",
     logging_steps=10,
     eval_strategy="epoch",
