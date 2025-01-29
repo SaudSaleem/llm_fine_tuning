@@ -27,7 +27,7 @@ import transformers
 
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
-DATASET_PATH = "bitAgent.csv"
+DATASET_PATH = "bitAgen1.csv"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
@@ -115,6 +115,8 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # --- DATA PROCESSING ---
 def preprocess_function(examples):
+    print('saud', examples['user'])
+    print('saleem', examples['assistant'])
     tokenized = tokenizer(
         examples["user"],
         text_target=examples["assistant"],
