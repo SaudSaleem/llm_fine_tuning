@@ -131,8 +131,15 @@ def preprocess_function(examples):
     
     # Mask user input in labels
     user_tokens = tokenizer(examples["user"], add_special_tokens=False)["input_ids"]
-    labels = [-100]*len(user_tokens) + tokenized["labels"][len(user_tokens):]
+    # labels = [-100]*len(user_tokens) + tokenized["labels"][len(user_tokens):]
+    # Temporarily unmask the user tokens for checking
+    labels = [user_tokens[i] if i < len(user_tokens) else tokenized["labels"][i - len(user_tokens)] for i in range(len(user_tokens) + len(tokenized["labels"]) - len(user_tokens))]
     
+    # Optional: Print to check labels and tokenization in human-readable format
+    print("User tokens (decoded):", tokenizer.decode(user_tokens))
+    print("Tokenized labels (decoded):", tokenizer.decode(tokenized["labels"]))
+    print("Final labels (decoded):", tokenizer.decode(labels))
+
     return {
         "input_ids": tokenized["input_ids"],
         "attention_mask": tokenized["attention_mask"],
