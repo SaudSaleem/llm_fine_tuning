@@ -85,6 +85,15 @@ formatted_df = pd.DataFrame(formatted_data)
 dataset = Dataset.from_pandas(formatted_df)
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
+# Print some examples from the training set
+print("Training examples:")
+for example in train_test_split["train"][:3]:  # Print first 3 examples
+    print(example)
+
+# Print some examples from the test set
+print("\nTest examples:")
+for example in train_test_split["test"][:3]:  # Print first 3 examples
+    print(example)
 # --- MODEL SETUP ---
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
@@ -113,7 +122,7 @@ def preprocess_function(examples):
     tokenized = tokenizer(
         examples["user"],
         text_target=examples["assistant"],
-        max_length=512,
+        max_length=768,
         truncation=True,
         padding="max_length",
     )
@@ -160,8 +169,8 @@ training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
     per_device_train_batch_size=2,
     gradient_accumulation_steps=4,
-    num_train_epochs=5,
-    learning_rate=2e-5,
+    num_train_epochs=20,
+    learning_rate=2e-3,
     optim="paged_adamw_32bit",
     logging_steps=10,
     eval_strategy="epoch",
