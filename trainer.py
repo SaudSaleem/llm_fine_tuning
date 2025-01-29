@@ -76,7 +76,7 @@ def preprocess_function(examples):
     tokenized = tokenizer(
         examples["user"],
         text_target=examples["assistant"],
-        max_length=768,
+        max_length=256,
         truncation=True,
         padding="max_length",
     )
