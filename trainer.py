@@ -1,7 +1,9 @@
 import torch
 import os
 import json
+import ast
 import re
+from typing import List, Dict, Any
 from datasets import Dataset
 from evaluate import load
 import pandas as pd
@@ -199,53 +201,125 @@ def validate_json_output(text):
     except:
         return False
 
-def extract_function_name(prediction):
-    """Extract function name from model's prediction."""
-    try:
-        print(type(prediction), 'before')
+# def extract_function_name(prediction):
+#     """Extract function name from model's prediction."""
+#     try:
+#         print(type(prediction), 'before')
 
-        # Check if the prediction is an ndarray (embedding)
-        if isinstance(prediction, np.ndarray):
-            prediction = prediction.tolist()  # Convert ndarray to list
-        print(type(prediction), 'after')
+#         # Check if the prediction is an ndarray (embedding)
+#         if isinstance(prediction, np.ndarray):
+#             prediction = prediction.tolist()  # Convert ndarray to list
+#         print(type(prediction), 'after')
 
-        # If prediction is tokenized (list of token IDs), decode it
-        if isinstance(prediction, list):
-            # Assuming the list contains token IDs, decode them
-            decoded_prediction = tokenizer.decode(prediction, skip_special_tokens=True)
-            print('decoded_prediction', decoded_prediction)
-            return decoded_prediction
-        # If prediction is already a string (decoded text)
-        elif isinstance(prediction, str):
-            return prediction
-    except Exception as e:
-        print(f"Error: {e}")
-        return ""
-    return ""
+#         # If prediction is tokenized (list of token IDs), decode it
+#         if isinstance(prediction, list):
+#             # Assuming the list contains token IDs, decode them
+#             decoded_prediction = tokenizer.decode(prediction, skip_special_tokens=True)
+#             print('decoded_prediction', decoded_prediction)
+#             return decoded_prediction
+#         # If prediction is already a string (decoded text)
+#         elif isinstance(prediction, str):
+#             return prediction
+#     except Exception as e:
+#         print(f"Error: {e}")
+#         return ""
+#     return ""
+
+# def compute_metrics(eval_pred):
+#     predictions, labels = eval_pred
+#     metric = load("accuracy")
+#     f1_metric = load("f1")
+#     precision_metric = load("precision")
+#     recall_metric = load("recall")
+    
+#     predictions = [extract_function_name(pred) for pred in predictions]
+#     labels = [extract_function_name(label) for label in labels]
+    
+#     accuracy = metric.compute(predictions=predictions, references=labels)
+#     f1 = f1_metric.compute(predictions=predictions, references=labels, average="weighted")
+#     precision = precision_metric.compute(predictions=predictions, references=labels, average="weighted")
+#     recall = recall_metric.compute(predictions=predictions, references=labels, average="weighted")
+#     print('accuracy', accuracy['accuracy'])
+#     return {
+#         "accuracy": accuracy["accuracy"],
+#         "f1": f1["f1"],
+#         "precision": precision["precision"],
+#         "recall": recall["recall"]
+#     }
 
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
-    metric = load("accuracy")
-    f1_metric = load("f1")
-    precision_metric = load("precision")
-    recall_metric = load("recall")
+    # Decode predictions and labels
+    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
     
-    predictions = [extract_function_name(pred) for pred in predictions]
-    labels = [extract_function_name(label) for label in labels]
+    correct = 0
+    total = len(decoded_labels)
     
-    accuracy = metric.compute(predictions=predictions, references=labels)
-    f1 = f1_metric.compute(predictions=predictions, references=labels, average="weighted")
-    precision = precision_metric.compute(predictions=predictions, references=labels, average="weighted")
-    recall = recall_metric.compute(predictions=predictions, references=labels, average="weighted")
-    print('accuracy', accuracy['accuracy'])
-    return {
-        "accuracy": accuracy["accuracy"],
-        "f1": f1["f1"],
-        "precision": precision["precision"],
-        "recall": recall["recall"]
-    }
+    for pred_str, label_str in zip(decoded_preds, decoded_labels):
+        # Extract function names from both prediction and label
+        pred_functions = extract_function_names(pred_str)
+        label_functions = extract_function_names(label_str)
+        
+        # Compare function sets
+        if set(pred_functions) == set(label_functions):
+            correct += 1
+    
+    accuracy = correct / total if total > 0 else 0
+    return {"accuracy": accuracy}
 
+def extract_function_names(text: str) -> List[str]:
+    """Extracts function names from structured text using multiple parsing strategies."""
+    functions = []
+    
+    # Strategy 1: Try JSON parsing
+    try:
+        data = json.loads(text)
+        functions.extend(_extract_from_json(data))
+        return list(set(functions))
+    except json.JSONDecodeError:
+        pass
+    
+    # Strategy 2: Try Python literal eval
+    try:
+        data = ast.literal_eval(text)
+        functions.extend(_extract_from_json(data))
+        return list(set(functions))
+    except (SyntaxError, ValueError):
+        pass
+    
+    # Strategy 3: Regex fallback
+    # Match "name": "func_name" patterns
+    functions += re.findall(r'(?:"name"|name|"function")\s*:\s*["\']([^"\']+)["\']', text, re.IGNORECASE)
+    # Match function call patterns like func_name(
+    functions += re.findall(r'(\w+)\s*\(', text)
+    # Match dictionary keys that might be function names
+    functions += re.findall(r'["\'](\w+)["\']\s*:\s*\{', text)
+    
+    return list(set([f.strip() for f in functions if f.strip()]))
 
+def _extract_from_json(data: Any) -> List[str]:
+    """Recursively extracts function names from parsed JSON structure."""
+    functions = []
+    
+    def _traverse(obj):
+        if isinstance(obj, list):
+            for item in obj:
+                _traverse(item)
+        elif isinstance(obj, dict):
+            # Check for 'name' field
+            if 'name' in obj and isinstance(obj['name'], str):
+                functions.append(obj['name'])
+            # Check for function-as-key pattern
+            for key in obj.keys():
+                if isinstance(key, str) and re.match(r'^\w+$', key):
+                    functions.append(key)
+            # Recurse through values
+            for value in obj.values():
+                _traverse(value)
+    
+    _traverse(data)
+    return functions
 # --- TRAINER ---
 trainer = Trainer(
     model=model,
