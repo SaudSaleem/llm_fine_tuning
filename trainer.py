@@ -203,6 +203,8 @@ def extract_function_name(prediction):
     """Extract function name from model's prediction."""
     try:
         print(type(prediction), 'before', prediction)
+        prediction = tokenizer.decode(prediction, skip_special_tokens=True)
+        print('prediction tokenee', prediction)
         # Ensure it's a list, no need to convert to JSON
         if isinstance(prediction, np.ndarray):
             prediction = prediction.tolist()  # Convert ndarray to a list if it's a NumPy array
