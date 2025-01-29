@@ -71,23 +71,51 @@ tokenizer = AutoTokenizer.from_pretrained(
 tokenizer.pad_token = tokenizer.eos_token
 
 # --- DATA PROCESSING ---
+# def preprocess_function(examples):
+#     # print('saleem', examples['user'], examples['assistant'])
+#     tokenized = tokenizer(
+#         examples["user"],
+#         text_target=examples["assistant"],
+#         max_length=256,
+#         truncation=True,
+#         padding="max_length",
+#     )
+#     # Mask user input in labels
+#     user_tokens = tokenizer(examples["user"], add_special_tokens=False)["input_ids"]
+#     labels = [-100]*len(user_tokens) + tokenized["labels"][len(user_tokens):]
+
+#     return {
+#         "input_ids": tokenized["input_ids"],
+#         "attention_mask": tokenized["attention_mask"],
+#         "labels": labels
+#     }
 def preprocess_function(examples):
-    # print('saleem', examples['user'], examples['assistant'])
+    # Combine user and assistant into a single text
+    combined_texts = [user + assistant for user, assistant in zip(examples["user"], examples["assistant"])]
+    
+    # Tokenize the combined text
     tokenized = tokenizer(
-        examples["user"],
-        text_target=examples["assistant"],
-        max_length=256,
+        combined_texts,
+        max_length=768,
         truncation=True,
         padding="max_length",
     )
-    # Mask user input in labels
-    user_tokens = tokenizer(examples["user"], add_special_tokens=False)["input_ids"]
-    labels = [-100]*len(user_tokens) + tokenized["labels"][len(user_tokens):]
-
+    
+    # Tokenize user inputs to determine their length (without special tokens)
+    user_tokenized = tokenizer(examples["user"], add_special_tokens=False)
+    user_lengths = [len(ids) for ids in user_tokenized["input_ids"]]
+    
+    # Create labels by masking the user part
+    labels = []
+    for input_ids, user_len in zip(tokenized["input_ids"], user_lengths):
+        # Mask user part with -100, keep assistant part
+        label = [-100] * user_len + input_ids[user_len:]
+        labels.append(label)
+    
     return {
         "input_ids": tokenized["input_ids"],
         "attention_mask": tokenized["attention_mask"],
-        "labels": labels
+        "labels": labels,
     }
 
 tokenized_ds = train_test_split.map(
@@ -137,31 +165,31 @@ training_args = TrainingArguments(
 )
 
 
-def compute_metrics(eval_pred: EvalPrediction):
-    # Get predictions and labels
-    predictions, labels = eval_pred
-    print('predictions shape', predictions.shape, 'labels shape', labels.shape)
-    # Convert logits to token IDs (assuming classification head)
-    predictions = np.argmax(predictions, axis=-1)
-    print('predictions shape after processing', predictions.shape)
-    # Remove ignored indices (often -100)
-    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
-    print("Processed Labels", labels)
-    # Decode sequences
-    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
-    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+# def compute_metrics(eval_pred: EvalPrediction):
+#     # Get predictions and labels
+#     predictions, labels = eval_pred
+#     print('predictions shape', predictions.shape, 'labels shape', labels.shape)
+#     # Convert logits to token IDs (assuming classification head)
+#     predictions = np.argmax(predictions, axis=-1)
+#     print('predictions shape after processing', predictions.shape)
+#     # Remove ignored indices (often -100)
+#     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+#     print("Processed Labels", labels)
+#     # Decode sequences
+#     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+#     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
-    correct = 0
-    total = len(decoded_labels)
-    print('total', total, "DECODED PREDICTIONS",decoded_preds, "ACTUAL LABELS", decoded_labels)
-    for pred, label in zip(decoded_preds, decoded_labels):
-        pred_functions = extract_top_function_names(pred)
-        label_functions = extract_top_function_names(label)
-        # print('pred_functions', pred_functions, 'label_functions', label_functions, set(pred_functions), set(label_functions))
-        if set(pred_functions) == set(label_functions):
-            correct += 1
+#     correct = 0
+#     total = len(decoded_labels)
+#     print('total', total, "DECODED PREDICTIONS",decoded_preds, "ACTUAL LABELS", decoded_labels)
+#     for pred, label in zip(decoded_preds, decoded_labels):
+#         pred_functions = extract_top_function_names(pred)
+#         label_functions = extract_top_function_names(label)
+#         # print('pred_functions', pred_functions, 'label_functions', label_functions, set(pred_functions), set(label_functions))
+#         if set(pred_functions) == set(label_functions):
+#             correct += 1
 
-    return {"accuracy": correct / total if total > 0 else 0}
+#     return {"accuracy": correct / total if total > 0 else 0}
 
 def extract_top_function_names(text: str) -> list:
     """Simplified extractor for standardized format"""
@@ -171,7 +199,37 @@ def extract_top_function_names(text: str) -> list:
     return list(set(functions))
 
 
-
+def compute_metrics(eval_pred: EvalPrediction):
+    predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=-1)
+    
+    # Replace -100 in labels with pad_token_id
+    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+    
+    # Decode predictions and labels
+    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=False)
+    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+    print('total', "DECODED PREDICTIONS",decoded_preds, "ACTUAL LABELS", decoded_labels)
+    # Extract assistant's response from predictions (split after [/INST])
+    assistant_preds = []
+    for pred in decoded_preds:
+        # Split on the last occurrence of [/INST]
+        if "[/INST]" in pred:
+            assistant_part = pred.split("[/INST]")[-1].strip()
+        else:
+            assistant_part = pred  # Fallback if delimiter missing
+        assistant_preds.append(assistant_part)
+    
+    # Calculate accuracy based on function names
+    correct = 0
+    total = len(decoded_labels)
+    for pred, label in zip(assistant_preds, decoded_labels):
+        pred_funcs = extract_top_function_names(pred)
+        label_funcs = extract_top_function_names(label)
+        if set(pred_funcs) == set(label_funcs):
+            correct += 1
+    
+    return {"accuracy": correct / total if total > 0 else 0}
 # --- TRAINER ---
 trainer = Trainer(
     model=model,
