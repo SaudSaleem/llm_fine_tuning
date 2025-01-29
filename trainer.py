@@ -237,9 +237,9 @@ def compute_metrics(eval_pred: EvalPrediction):
     for pred, label in zip(assistant_preds, decoded_labels):
         pred_funcs = extract_top_function_names(pred)
         label_funcs = extract_top_function_names(label)
-        print('pred_funcs', pred_funcs, 'label_funcs', label_funcs, correct)
         if set(pred_funcs) == set(label_funcs):
             correct += 1
+        print('pred_funcs', pred_funcs, 'label_funcs', label_funcs, correct, set(pred_funcs), set(label_funcs))
     
     return {"accuracy": correct / total if total > 0 else 0}
 # --- TRAINER ---
