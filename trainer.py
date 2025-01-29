@@ -132,10 +132,16 @@ def preprocess_function(examples):
     # Mask user input in labels
     user_tokens = tokenizer(examples["user"], add_special_tokens=False)["input_ids"]
     labels = [-100]*len(user_tokens) + tokenized["labels"][len(user_tokens):]
-    
+    print("Tokenized Labels:", tokenized["labels"])
+    print("Masked Labels:", labels)
     # Decode the labels to check human-readable form
-    readable_labels = tokenizer.decode([t for t in labels if t != -100])
-    print("Human-readable labels:", readable_labels)  # Print the readable assistant response
+    # Extract only non -100 values for human-readable decoding
+    filtered_labels = [token for token in labels if token != -100]
+
+    # Decode only if there are valid label tokens
+    readable_labels = tokenizer.decode(filtered_labels) if filtered_labels else "[EMPTY LABELS]"
+
+    print("Human-readable labels:", readable_labels) 
     return {
         "input_ids": tokenized["input_ids"],
         "attention_mask": tokenized["attention_mask"],
