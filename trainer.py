@@ -151,7 +151,7 @@ peft_config = LoraConfig(
     bias="none",
     lora_dropout=0.1,
     task_type="CAUSAL_LM",
-    # modules_to_save=["lm_head"]
+    modules_to_save=None
 )
 model = get_peft_model(model, peft_config)
 print_trainable_parameters(model)
