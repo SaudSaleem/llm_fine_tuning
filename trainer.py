@@ -251,7 +251,16 @@ def validate_json_output(text):
 
 
 def compute_metrics(eval_pred: EvalPrediction):
+    # Get predictions and labels
     predictions, labels = eval_pred
+    
+    # Convert logits to token IDs (assuming classification head)
+    predictions = np.argmax(predictions, axis=-1)
+    
+    # Remove ignored indices (often -100)
+    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+    
+    # Decode sequences
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
@@ -262,25 +271,18 @@ def compute_metrics(eval_pred: EvalPrediction):
         pred_functions = extract_top_function_names(pred)
         label_functions = extract_top_function_names(label)
         
-        # Consider order-agnostic match
         if set(pred_functions) == set(label_functions):
             correct += 1
 
     return {"accuracy": correct / total if total > 0 else 0}
 
-def extract_top_function_names(text: str) -> List[str]:
-    """Extracts function names from standardized format with 'name' key at top level"""
-    try:
-        # Try structured JSON parsing first
-        data = json.loads(text)
-        if isinstance(data, dict):
-            return [data.get("name", "")]
-        elif isinstance(data, list):
-            return [item.get("name", "") for item in data if isinstance(item, dict)]
-        return []
-    except json.JSONDecodeError:
-        # Fallback to regex for partial matches
-        return list(set(re.findall(r'"name"\s*:\s*"([^"]+)"', text)))
+def extract_top_function_names(text: str) -> list:
+    """Simplified extractor for standardized format"""
+    # Match "name": "function_name" patterns
+    functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
+    return list(set(functions))
+
+
 
 # --- TRAINER ---
 trainer = Trainer(
