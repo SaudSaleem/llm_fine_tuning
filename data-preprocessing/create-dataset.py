@@ -12,13 +12,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class ShuffledJSONDatasetIterator:
+class JSONDatasetIterator:
     def __init__(self):
         self.dataframes = []
         self.all_data = None
-        self.shuffled_data = None
         self.index = 0
 
+        # Load data from JSON files
         for filename in ["java", "javascript", "simple", "multiple", "sql", "live_simple", "live_multiple"]:
             bfcl_path = f"bitagent.data/bfcl/BFCL_v3_{filename}.json"
             bfcl_answer_path = f"bitagent.data/bfcl/possible_answer/BFCL_v3_{filename}.json"
@@ -27,25 +27,21 @@ class ShuffledJSONDatasetIterator:
                 df_answer = pd.read_json(bfcl_answer_path, lines=True)
                 df_data['ground_truth'] = df_answer['ground_truth']
                 self.dataframes.append(df_data[['id', 'question', 'function', 'ground_truth']])
-        self.all_data = pd.concat(self.dataframes)
-        self._shuffle_data()
+                print(f"Length of {filename} dataframe: {len(df_data)}")
 
-    def _shuffle_data(self):
-        self.shuffled_data = self.all_data.sample(frac=1).reset_index(drop=True)
-        self.index = 0
+        self.all_data = pd.concat(self.dataframes)
 
     def __iter__(self):
         self.index = 0
         return self
 
     def __next__(self):
-        if self.index < len(self.shuffled_data):
-            row = self.shuffled_data.iloc[self.index]
+        if self.index < len(self.all_data):
+            row = self.all_data.iloc[self.index]
             self.index += 1
             return row
         else:
-            self._shuffle_data()
-            return self.__next__()
+            raise StopIteration
 
 
 def huggingface_loader(dataset_name, root_data_dir="bitagent.data", split="train", name=None):
@@ -69,7 +65,7 @@ def load_bfcl_dataset(dataset_name, root_data_dir="bitagent.data", split="train"
         repo_type="dataset",
         local_dir="bitagent.data/bfcl/"
     )
-    return ShuffledJSONDatasetIterator()
+    return JSONDatasetIterator()
 
 
 def sample_and_save_datasets(output_dir="bitagent.data/samples", sample_size=1000):
@@ -95,7 +91,7 @@ def sample_and_save_datasets(output_dir="bitagent.data/samples", sample_size=100
 
     try:
         bfcl_ds = load_bfcl_dataset("gorilla-llm/Berkeley-Function-Calling-Leaderboard")
-        bfcl_sample = pd.DataFrame(list(islice(bfcl_ds, 100000)))
+        bfcl_sample = pd.DataFrame(list(bfcl_ds))
         bfcl_sample.to_csv(f"{output_dir}/bfcl_sample.csv", index=False)
         logger.info(f"Saved BFCL sample to {output_dir}/bfcl_sample.csv")
     except Exception as e:
