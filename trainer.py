@@ -85,18 +85,7 @@ formatted_df = pd.DataFrame(formatted_data)
 dataset = Dataset.from_pandas(df)
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
-print("saud",train_test_split, train_test_split['train'])
-# Print some examples from the training set
-# Print some examples from the training set
-print("Training examples:")
 
-for example in train_test_split["train"]:  # Print first 3 examples
-    print(f"User: {example}")
-
-# Print some examples from the test set
-print("\nTest examples:")
-for example in train_test_split["test"]:  # Print first 3 examples
-    print(f"User: {example['user']}, Assistant: {example['assistant']}")
 # --- MODEL SETUP ---
 # bnb_config = BitsAndBytesConfig(
 #     load_in_4bit=True,
@@ -122,6 +111,7 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # --- DATA PROCESSING ---
 def preprocess_function(examples):
+    print('preprocess_function', examples,"1234567", examples['user'])
     tokenized = tokenizer(
         examples["user"],
         text_target=examples["assistant"],
