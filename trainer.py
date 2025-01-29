@@ -89,7 +89,7 @@ print("saud",train_test_split, train_test_split['train'])
 # Print some examples from the training set
 # Print some examples from the training set
 print("Training examples:")
-s
+
 for example in train_test_split["train"]:  # Print first 3 examples
     print(f"User: {example}")
 
