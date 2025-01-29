@@ -270,7 +270,7 @@ def compute_metrics(eval_pred: EvalPrediction):
     for pred, label in zip(decoded_preds, decoded_labels):
         pred_functions = extract_top_function_names(pred)
         label_functions = extract_top_function_names(label)
-        print('pred_functions', pred_functions, 'label_functions', label_functions)
+        print('pred_functions', pred_functions, 'label_functions', label_functions, set(pred_functions), set(label_functions))
         if set(pred_functions) == set(label_functions):
             correct += 1
 
