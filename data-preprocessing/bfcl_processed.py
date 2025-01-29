@@ -16,7 +16,7 @@ for index, row in bfcl.iterrows():
     try:
         # Parse question and function columns
         question_messages = literal_eval(row['question'])
-        function_data = literal_eval(row['function'])
+        function_data = literal_eval(row['ground_truth'])
         
         # Extract user messages
         user_content = []
