@@ -60,18 +60,29 @@ output_file = "bfcl_processed.csv"
 # Load the dataset
 bfcl = pd.read_csv(os.path.join(data_folder, input_file))
 
-def transform_function_data(function_data):
+def transform_function_data(function_data, index):
     """
     Convert function data to structured format with 'name' and 'parameters'.
     """
     try:
+        print('function_data ==> ', function_data)
         parsed_data = literal_eval(function_data)  # Convert string to Python object
+        print('parsed_data ==> ', parsed_data)
         if not isinstance(parsed_data, list) or len(parsed_data) == 0:
+            print(f"⚠️ Skipping row {index}: function_data is not a list → {function_data}")
             return None
         
-        func_dict = parsed_data[0]  # Assuming only one function per row
+        func_dict = parsed_data[0]  # Extract first function dictionary
+        if not isinstance(func_dict, dict):
+            print(f"⚠️ Skipping row {index}: function_data[0] is not a dictionary → {func_dict}")
+            return None
+        
         func_name = list(func_dict.keys())[0]  # Extract function name
         params = func_dict[func_name]  # Extract parameters
+        
+        if not isinstance(params, dict):
+            print(f"⚠️ Skipping row {index}: Parameters are not a dictionary → {params}")
+            return None
 
         # Convert parameters into structured format
         structured_params = {
@@ -81,6 +92,10 @@ def transform_function_data(function_data):
         }
 
         for key, value in params.items():
+            if not isinstance(value, list) or len(value) == 0:
+                print(f"⚠️ Skipping row {index}: Invalid parameter format → {key}: {value}")
+                return None
+            
             structured_params["properties"][key] = {
                 "type": "number" if isinstance(value[0], (int, float)) else "string",
                 "description": f"Parameter for {key}"
@@ -92,7 +107,7 @@ def transform_function_data(function_data):
         }
     
     except Exception as e:
-        print(f"Error processing function data: {str(e)}")
+        print(f"⚠️ Error processing function_data at index {index}: {function_data} → {str(e)}")
         return None
 
 # Process each row to extract input and output
@@ -107,11 +122,11 @@ for index, row in bfcl.iterrows():
         user_content = []
         for message_group in question_messages:
             for msg in message_group:
-                if msg['role'] == 'user':
-                    user_content.append(msg['content'])
+                if isinstance(msg, dict) and msg.get('role') == 'user':
+                    user_content.append(msg.get('content', ''))
 
         # Transform function data
-        structured_output = transform_function_data(function_data)
+        structured_output = transform_function_data(function_data, index)
 
         # Create input-output pairs
         if structured_output:
@@ -121,7 +136,7 @@ for index, row in bfcl.iterrows():
             })
 
     except Exception as e:
-        print(f"Error processing row {index}: {str(e)}")
+        print(f"⚠️ Error processing row {index}: {str(e)}")
         continue
 
 # Convert to DataFrame and save as CSV
