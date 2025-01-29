@@ -76,13 +76,16 @@ def format_training_example(row):
     }
 
 # Create a list of formatted examples
-formatted_data = df.apply(format_training_example, axis=1).tolist()
+formatted_df = df.apply(format_training_example, axis=1)
+
+# Convert the formatted dataframe into a new DataFrame with 'user' and 'assistant' columns
+formatted_df = pd.DataFrame(formatted_df.tolist())
 
 # Convert to DataFrame first
-formatted_df = pd.DataFrame(formatted_data)
+# formatted_df = pd.DataFrame(formatted_df)
 
 # Then create the Dataset
-dataset = Dataset.from_pandas(df)
+dataset = Dataset.from_pandas(formatted_df)
 print('dataset', dataset, dataset[0])
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
