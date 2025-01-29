@@ -266,7 +266,7 @@ def compute_metrics(eval_pred: EvalPrediction):
 
     correct = 0
     total = len(decoded_labels)
-
+    print('total', total, decoded_preds, decoded_labels)
     for pred, label in zip(decoded_preds, decoded_labels):
         pred_functions = extract_top_function_names(pred)
         label_functions = extract_top_function_names(label)
@@ -278,6 +278,7 @@ def compute_metrics(eval_pred: EvalPrediction):
 
 def extract_top_function_names(text: str) -> list:
     """Simplified extractor for standardized format"""
+    print('extract_top_function_names', text)
     # Match "name": "function_name" patterns
     functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
     return list(set(functions))
