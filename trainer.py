@@ -19,7 +19,8 @@ from transformers import (
     AutoConfig,
     StoppingCriteria,
     StoppingCriteriaList,
-    GenerationConfig
+    GenerationConfig,
+    EvalPrediction
 )
 from peft import (
     prepare_model_for_kbit_training,
@@ -247,79 +248,40 @@ def validate_json_output(text):
 #         "recall": recall["recall"]
 #     }
 
-def compute_metrics(eval_pred):
+
+
+def compute_metrics(eval_pred: EvalPrediction):
     predictions, labels = eval_pred
-    # Decode predictions and labels
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-    
+
     correct = 0
     total = len(decoded_labels)
-    
-    for pred_str, label_str in zip(decoded_preds, decoded_labels):
-        # Extract function names from both prediction and label
-        pred_functions = extract_function_names(pred_str)
-        label_functions = extract_function_names(label_str)
+
+    for pred, label in zip(decoded_preds, decoded_labels):
+        pred_functions = extract_top_function_names(pred)
+        label_functions = extract_top_function_names(label)
         
-        # Compare function sets
+        # Consider order-agnostic match
         if set(pred_functions) == set(label_functions):
             correct += 1
-    
-    accuracy = correct / total if total > 0 else 0
-    return {"accuracy": accuracy}
 
-def extract_function_names(text: str) -> List[str]:
-    """Extracts function names from structured text using multiple parsing strategies."""
-    functions = []
-    
-    # Strategy 1: Try JSON parsing
+    return {"accuracy": correct / total if total > 0 else 0}
+
+def extract_top_function_names(text: str) -> List[str]:
+    """Extracts function names from standardized format with 'name' key at top level"""
     try:
+        # Try structured JSON parsing first
         data = json.loads(text)
-        functions.extend(_extract_from_json(data))
-        return list(set(functions))
+        if isinstance(data, dict):
+            return [data.get("name", "")]
+        elif isinstance(data, list):
+            return [item.get("name", "") for item in data if isinstance(item, dict)]
+        return []
     except json.JSONDecodeError:
-        pass
-    
-    # Strategy 2: Try Python literal eval
-    try:
-        data = ast.literal_eval(text)
-        functions.extend(_extract_from_json(data))
-        return list(set(functions))
-    except (SyntaxError, ValueError):
-        pass
-    
-    # Strategy 3: Regex fallback
-    # Match "name": "func_name" patterns
-    functions += re.findall(r'(?:"name"|name|"function")\s*:\s*["\']([^"\']+)["\']', text, re.IGNORECASE)
-    # Match function call patterns like func_name(
-    functions += re.findall(r'(\w+)\s*\(', text)
-    # Match dictionary keys that might be function names
-    functions += re.findall(r'["\'](\w+)["\']\s*:\s*\{', text)
-    
-    return list(set([f.strip() for f in functions if f.strip()]))
+        # Fallback to regex for partial matches
+        return list(set(re.findall(r'"name"\s*:\s*"([^"]+)"', text)))
 
-def _extract_from_json(data: Any) -> List[str]:
-    """Recursively extracts function names from parsed JSON structure."""
-    functions = []
-    
-    def _traverse(obj):
-        if isinstance(obj, list):
-            for item in obj:
-                _traverse(item)
-        elif isinstance(obj, dict):
-            # Check for 'name' field
-            if 'name' in obj and isinstance(obj['name'], str):
-                functions.append(obj['name'])
-            # Check for function-as-key pattern
-            for key in obj.keys():
-                if isinstance(key, str) and re.match(r'^\w+$', key):
-                    functions.append(key)
-            # Recurse through values
-            for value in obj.values():
-                _traverse(value)
-    
-    _traverse(data)
-    return functions
 # --- TRAINER ---
 trainer = Trainer(
     model=model,
