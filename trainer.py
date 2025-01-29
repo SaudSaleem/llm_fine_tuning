@@ -12,21 +12,15 @@ from huggingface_hub import login
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
-    BitsAndBytesConfig,
     TrainingArguments,
     Trainer,
     DataCollatorForLanguageModeling,
-    AutoConfig,
-    StoppingCriteria,
-    StoppingCriteriaList,
-    GenerationConfig,
     EvalPrediction
 )
 from peft import (
     prepare_model_for_kbit_training,
     LoraConfig,
     get_peft_model,
-    PeftModel
 )
 import transformers
 
@@ -35,33 +29,6 @@ MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
 DATASET_PATH = "bitAgent1.csv"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
-
-# --- JSON RESPONSE STOPPING CRITERIA ---
-class JsonStopCriteria(StoppingCriteria):
-    def __init__(self, tokenizer):
-        self.tokenizer = tokenizer
-        self.stack = []
-        self.brace_count = 0
-        
-    def __call__(self, input_ids, scores, **kwargs):
-        last_token = input_ids[0][-1]
-        decoded = self.tokenizer.decode([last_token])
-        
-        if decoded == '{':
-            self.brace_count += 1
-            self.stack.append('}')
-        elif decoded == '[':
-            self.stack.append(']')
-        elif decoded in ['}', ']']:
-            if self.stack and self.stack[-1] == decoded:
-                self.stack.pop()
-                if decoded == '}': 
-                    self.brace_count -= 1
-                    
-        # Stop when JSON structure is complete
-        if self.brace_count == 0 and len(self.stack) == 0:
-            return True
-        return False
 
 # --- LOGIN TO HUGGINGFACE ---
 login(token=HF_TOKEN)
@@ -86,28 +53,13 @@ formatted_df = df.apply(format_training_example, axis=1)
 # Convert the formatted dataframe into a new DataFrame with 'user' and 'assistant' columns
 formatted_df = pd.DataFrame(formatted_df.tolist())
 
-# Convert to DataFrame first
-# formatted_df = pd.DataFrame(formatted_df)
-
 # Then create the Dataset
 dataset = Dataset.from_pandas(formatted_df)
-# print('dataset', dataset, dataset[0])
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
-
-
-# --- MODEL SETUP ---
-# bnb_config = BitsAndBytesConfig(
-#     load_in_4bit=True,
-#     bnb_4bit_use_double_quant=True,
-#     bnb_4bit_quant_type="nf4",
-#     bnb_4bit_compute_dtype=torch.bfloat16
-# )
 
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
-    # quantization_config=bnb_config,
     device_map="auto",
-    # attn_implementation="flash_attention_2"
 )
 
 tokenizer = AutoTokenizer.from_pretrained(
@@ -128,20 +80,10 @@ def preprocess_function(examples):
         truncation=True,
         padding="max_length",
     )
-    
     # Mask user input in labels
     user_tokens = tokenizer(examples["user"], add_special_tokens=False)["input_ids"]
     labels = [-100]*len(user_tokens) + tokenized["labels"][len(user_tokens):]
-    print("Tokenized Labels:", tokenized["labels"])
-    print("Masked Labels:", labels)
-    # Decode the labels to check human-readable form
-    # Extract only non -100 values for human-readable decoding
-    filtered_labels = [token for token in labels if token != -100]
 
-    # Decode only if there are valid label tokens
-    readable_labels = tokenizer.decode(filtered_labels) if filtered_labels else "[EMPTY LABELS]"
-
-    print("Human-readable labels:", readable_labels) 
     return {
         "input_ids": tokenized["input_ids"],
         "attention_mask": tokenized["attention_mask"],
@@ -192,71 +134,7 @@ training_args = TrainingArguments(
     max_grad_norm=0.5,
     report_to="none",
     gradient_checkpointing=True,
-    # generation_config={
-    #     "max_new_tokens": 256,
-    #     "temperature": 0.7,
-    #     "top_p": 0.9,
-    #     "repetition_penalty": 1.15
-    # }
 )
-
-# --- VALIDATION ---
-def validate_json_output(text):
-    try:
-        json_str = re.search(r'\[.*\]', text, re.DOTALL).group()
-        parsed = json.loads(json_str)
-        assert isinstance(parsed, list)
-        assert all(isinstance(item, dict) for item in parsed)
-        return True
-    except:
-        return False
-
-# def extract_function_name(prediction):
-#     """Extract function name from model's prediction."""
-#     try:
-#         print(type(prediction), 'before')
-
-#         # Check if the prediction is an ndarray (embedding)
-#         if isinstance(prediction, np.ndarray):
-#             prediction = prediction.tolist()  # Convert ndarray to list
-#         print(type(prediction), 'after')
-
-#         # If prediction is tokenized (list of token IDs), decode it
-#         if isinstance(prediction, list):
-#             # Assuming the list contains token IDs, decode them
-#             decoded_prediction = tokenizer.decode(prediction, skip_special_tokens=True)
-#             print('decoded_prediction', decoded_prediction)
-#             return decoded_prediction
-#         # If prediction is already a string (decoded text)
-#         elif isinstance(prediction, str):
-#             return prediction
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         return ""
-#     return ""
-
-# def compute_metrics(eval_pred):
-#     predictions, labels = eval_pred
-#     metric = load("accuracy")
-#     f1_metric = load("f1")
-#     precision_metric = load("precision")
-#     recall_metric = load("recall")
-    
-#     predictions = [extract_function_name(pred) for pred in predictions]
-#     labels = [extract_function_name(label) for label in labels]
-    
-#     accuracy = metric.compute(predictions=predictions, references=labels)
-#     f1 = f1_metric.compute(predictions=predictions, references=labels, average="weighted")
-#     precision = precision_metric.compute(predictions=predictions, references=labels, average="weighted")
-#     recall = recall_metric.compute(predictions=predictions, references=labels, average="weighted")
-#     print('accuracy', accuracy['accuracy'])
-#     return {
-#         "accuracy": accuracy["accuracy"],
-#         "f1": f1["f1"],
-#         "precision": precision["precision"],
-#         "recall": recall["recall"]
-#     }
-
 
 
 def compute_metrics(eval_pred: EvalPrediction):
@@ -308,38 +186,3 @@ trainer = Trainer(
 trainer.train()
 model.save_pretrained(OUTPUT_DIR)
 tokenizer.save_pretrained(OUTPUT_DIR)
-
-# --- INFERENCE ---
-def generate_tool_call(query, device="cuda"):
-    system_msg = """Respond ONLY with function call. Example:
-    User: What is the distance from Los Angeles to New York
-    Assistant: calculate_distance(destination="New York", origin="Los Angeles")"""
-    
-    
-    prompt = f"[INST] {system_msg}\n\nInput: {query} [/INST]"
-    
-    inputs = tokenizer(prompt, return_tensors="pt").to(device)
-    stopping_criteria = StoppingCriteriaList([JsonStopCriteria(tokenizer)])
-    
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=256,
-        temperature=0.1,
-        top_p=0.95,
-        repetition_penalty=1.15,
-        stopping_criteria=stopping_criteria,
-        do_sample=False
-    )
-    
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    json_str = re.search(r'\[.*\]', response, re.DOTALL).group()
-    
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError:
-        return {"error": "Invalid JSON format"}
-
-# Example usage
-# if __name__ == "__main__":
-    # tool_call = generate_tool_call("play Johnny Johnny Yes papa")
-    # print(json.dumps(tool_call, indent=2))
