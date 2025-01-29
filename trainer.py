@@ -111,7 +111,7 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # --- DATA PROCESSING ---
 def preprocess_function(examples):
-    print('preprocess_function', examples,"1234567", examples['user'])
+    print('preprocess_function', examples,"1234567")
     tokenized = tokenizer(
         examples["user"],
         text_target=examples["assistant"],
