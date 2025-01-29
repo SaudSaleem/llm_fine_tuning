@@ -83,6 +83,7 @@ formatted_df = pd.DataFrame(formatted_data)
 
 # Then create the Dataset
 dataset = Dataset.from_pandas(df)
+print('dataset', dataset, dataset[0])
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
 
