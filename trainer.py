@@ -193,7 +193,7 @@ training_args = TrainingArguments(
 
 def extract_top_function_names(text: str) -> list:
     """Simplified extractor for standardized format"""
-    print('extract_top_function_names', text)
+    # print('extract_top_function_names', text)
     # Match "name": "function_name" patterns
     functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
     return list(set(functions))
@@ -209,7 +209,7 @@ def compute_metrics(eval_pred: EvalPrediction):
     # Decode predictions and labels
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=False)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-    print('total', "DECODED PREDICTIONS",decoded_preds, "ACTUAL LABELS", decoded_labels)
+    # print('total', "DECODED PREDICTIONS",decoded_preds, "ACTUAL LABELS", decoded_labels)
     # Extract assistant's response from predictions (split after [/INST])
     assistant_preds = []
     for pred in decoded_preds:
