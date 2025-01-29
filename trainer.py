@@ -202,22 +202,25 @@ def validate_json_output(text):
 def extract_function_name(prediction):
     """Extract function name from model's prediction."""
     try:
-        print(type(prediction), 'before')
+        print(type(prediction), 'before', prediction)
         # Ensure it's a list, no need to convert to JSON
         if isinstance(prediction, np.ndarray):
             prediction = prediction.tolist()  # Convert ndarray to a list if it's a NumPy array
-        print(type(prediction), 'after')
+            print('prediction.tolist()', prediction)
 
         # If prediction is a list, get the first item and check for "name"
         if isinstance(prediction, list) and len(prediction) > 0:
             # Check if the first element is a dict
             if isinstance(prediction[0], dict):
+                print('prediction[0].get', prediction)
                 return prediction[0].get("name", "")
             else:
                 return ""
         elif isinstance(prediction, dict):
             # If prediction is a dictionary, get the "name"
+            print('prediction dict', prediction)
             return prediction.get("name", "")
+        print(type(prediction), 'after')
     except Exception as e:
         print(f"Error: {e}")
         return ""
