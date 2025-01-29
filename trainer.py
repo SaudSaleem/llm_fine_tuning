@@ -27,7 +27,7 @@ import transformers
 
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
-DATASET_PATH = "bitAgent1.csv"
+DATASET_PATH = "bitAgent.csv"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
@@ -66,9 +66,9 @@ df = pd.read_csv(DATASET_PATH)
 
 # Add system prompt to training data
 def format_training_example(row):
-    system_prompt = """Respond ONLY with valid JSON containing tool calls. Example:
-    User: play Happy Song
-    Assistant: [{"play_song": {"query": "Happy Song"}}]"""
+    system_prompt = """Respond ONLY with function call. Example:
+    User: What is the distance from Los Angeles to New York
+    Assistant: calculate_distance(destination="New York", origin="Los Angeles")"""
     
     return {
         "user": f"[INST] {system_prompt}\n\nInput: {row['input']} [/INST]",
@@ -115,7 +115,6 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # --- DATA PROCESSING ---
 def preprocess_function(examples):
-    print('saud', examples['user'])
     print('saleem', examples['assistant'])
     tokenized = tokenizer(
         examples["user"],
@@ -225,9 +224,10 @@ tokenizer.save_pretrained(OUTPUT_DIR)
 
 # --- INFERENCE ---
 def generate_tool_call(query, device="cuda"):
-    system_msg = """Respond ONLY with valid JSON tool calls. Example:
-    Input: play Song Name
-    Output: [{"play_song": {"query": "Song Name"}}]"""
+    system_msg = """Respond ONLY with function call. Example:
+    User: What is the distance from Los Angeles to New York
+    Assistant: calculate_distance(destination="New York", origin="Los Angeles")"""
+    
     
     prompt = f"[INST] {system_msg}\n\nInput: {query} [/INST]"
     
