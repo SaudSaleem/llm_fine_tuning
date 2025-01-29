@@ -88,13 +88,15 @@ train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 print("saud",train_test_split, train_test_split['train'])
 # Print some examples from the training set
 print("Training examples:")
+# Print some examples from the training set
+print("Training examples:")
 for example in train_test_split["train"][:3]:  # Print first 3 examples
-    print(example)
+    print(f"User: {example['user']}, Assistant: {example['assistant']}")
 
 # Print some examples from the test set
 print("\nTest examples:")
 for example in train_test_split["test"][:3]:  # Print first 3 examples
-    print(example)
+    print(f"User: {example['user']}, Assistant: {example['assistant']}")
 # --- MODEL SETUP ---
 # bnb_config = BitsAndBytesConfig(
 #     load_in_4bit=True,
