@@ -256,10 +256,10 @@ def compute_metrics(eval_pred: EvalPrediction):
     print('predictions shape', predictions.shape, 'labels shape', labels.shape)
     # Convert logits to token IDs (assuming classification head)
     predictions = np.argmax(predictions, axis=-1)
-    
+    print('predictions shape after processing', predictions.shape)
     # Remove ignored indices (often -100)
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
-    
+    print("Processed Labels", labels)
     # Decode sequences
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
@@ -279,9 +279,10 @@ def compute_metrics(eval_pred: EvalPrediction):
 def extract_top_function_names(text: str) -> list:
     """Simplified extractor for standardized format"""
     print('extract_top_function_names', text)
+    return text.split()
     # Match "name": "function_name" patterns
-    functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
-    return list(set(functions))
+    # functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
+    # return list(set(functions))
 
 
 
