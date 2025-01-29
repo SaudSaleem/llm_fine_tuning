@@ -12,4 +12,5 @@ sentencepiece
 tokenizers
 scikit-learn
 numpy
-autoawq
+autoawq,
+evaluate

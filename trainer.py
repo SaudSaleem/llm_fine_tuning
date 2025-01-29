@@ -2,7 +2,8 @@ import torch
 import os
 import json
 import re
-from datasets import Dataset, load_metric
+from datasets import Dataset
+from evaluate import load
 import pandas as pd
 from huggingface_hub import login
 from transformers import (
@@ -166,8 +167,8 @@ training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
     per_device_train_batch_size=2,
     gradient_accumulation_steps=4,
-    num_train_epochs=20,
-    learning_rate=2e-3,
+    num_train_epochs=10,
+    learning_rate=1e-3,
     optim="paged_adamw_32bit",
     logging_steps=10,
     eval_strategy="epoch",
@@ -211,10 +212,10 @@ def extract_function_name(prediction):
 
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
-    metric = load_metric("accuracy")
-    f1_metric = load_metric("f1")
-    precision_metric = load_metric("precision")
-    recall_metric = load_metric("recall")
+    metric = load("accuracy")
+    f1_metric = load("f1")
+    precision_metric = load("precision")
+    recall_metric = load("recall")
     
     predictions = [extract_function_name(pred) for pred in predictions]
     labels = [extract_function_name(label) for label in labels]
