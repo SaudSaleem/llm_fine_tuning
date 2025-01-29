@@ -120,7 +120,7 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # --- DATA PROCESSING ---
 def preprocess_function(examples):
-    print('saleem', examples)
+    print('saleem', examples['user'], examples['assistant'])
     tokenized = tokenizer(
         examples["user"],
         text_target=examples["assistant"],
@@ -253,7 +253,7 @@ def validate_json_output(text):
 def compute_metrics(eval_pred: EvalPrediction):
     # Get predictions and labels
     predictions, labels = eval_pred
-    
+    print('predictions shape', predictions.shape, 'labels shape', labels.shape)
     # Convert logits to token IDs (assuming classification head)
     predictions = np.argmax(predictions, axis=-1)
     
