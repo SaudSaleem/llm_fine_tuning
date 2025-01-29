@@ -71,12 +71,12 @@ df = pd.read_csv(DATASET_PATH)
 
 # Add system prompt to training data
 def format_training_example(row):
-    system_prompt = """Respond ONLY with function call. Example:
-    User: What is the distance from Los Angeles to New York
-    Assistant: calculate_distance(destination="New York", origin="Los Angeles")"""
+    # system_prompt = """Respond ONLY with function call. Example:
+    # User: What is the distance from Los Angeles to New York
+    # Assistant: calculate_distance(destination="New York", origin="Los Angeles")"""
     
     return {
-        "user": f"[INST] {system_prompt}\n\nInput: {row['input']} [/INST]",
+        "user": f"[INST] input: {row['input']} [/INST]",
         "assistant": f"{row['output']}</s>"
     }
 
@@ -266,11 +266,11 @@ def compute_metrics(eval_pred: EvalPrediction):
 
     correct = 0
     total = len(decoded_labels)
-    print('total', total, decoded_preds, decoded_labels)
+    print('total', total, "DECODED PREDICTIONS",decoded_preds, "ACTUAL LABELS", decoded_labels)
     for pred, label in zip(decoded_preds, decoded_labels):
         pred_functions = extract_top_function_names(pred)
         label_functions = extract_top_function_names(label)
-        print('pred_functions', pred_functions, 'label_functions', label_functions, set(pred_functions), set(label_functions))
+        # print('pred_functions', pred_functions, 'label_functions', label_functions, set(pred_functions), set(label_functions))
         if set(pred_functions) == set(label_functions):
             correct += 1
 
