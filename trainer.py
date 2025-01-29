@@ -26,7 +26,7 @@ import transformers
 
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
-DATASET_PATH = "bitAgent.csv"
+DATASET_PATH = "bitAgent1.csv"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
@@ -125,6 +125,16 @@ tokenized_ds = train_test_split.map(
 )
 
 # --- LORA CONFIG ---
+def print_trainable_parameters(model):
+    trainable_params = 0
+    all_param = 0
+    for _, param in model.named_parameters():
+        all_param += param.numel()
+        if param.requires_grad:
+            trainable_params += param.numel()
+    print(
+        f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
+    )
 model = prepare_model_for_kbit_training(model)
 peft_config = LoraConfig(
     r=32,
@@ -138,13 +148,13 @@ peft_config = LoraConfig(
         "up_proj",
         "down_proj"
     ],
-    bias="lora_only",
+    bias="none",
     lora_dropout=0.1,
     task_type="CAUSAL_LM",
-    modules_to_save=["lm_head"]
+    # modules_to_save=["lm_head"]
 )
 model = get_peft_model(model, peft_config)
-
+print_trainable_parameters(model)
 # --- TRAINING ARGS ---
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
