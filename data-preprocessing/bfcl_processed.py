@@ -85,7 +85,8 @@ def transform_function_data(function_data, index):
         # Convert parameters into structured format
         structured_params = {
             "type": "object",
-            "properties": {}
+            "properties": {},
+            "required": list(params.keys())  # Set required parameters
         }
 
         for key, value in params.items():
