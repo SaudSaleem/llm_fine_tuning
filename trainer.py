@@ -135,7 +135,7 @@ def print_trainable_parameters(model):
     print(
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
     )
-model = prepare_model_for_kbit_training(model)
+# model = prepare_model_for_kbit_training(model)
 peft_config = LoraConfig(
     r=32,
     lora_alpha=64,
