@@ -202,27 +202,22 @@ def validate_json_output(text):
 def extract_function_name(prediction):
     """Extract function name from model's prediction."""
     try:
-        print(type(prediction), 'before', prediction)
-        prediction = tokenizer.decode(prediction, skip_special_tokens=True)
-        print('prediction tokenee', prediction)
-        # Ensure it's a list, no need to convert to JSON
-        if isinstance(prediction, np.ndarray):
-            prediction = prediction.tolist()  # Convert ndarray to a list if it's a NumPy array
-            # print('prediction.tolist()', prediction)
+        print(type(prediction), 'before')
 
-        # If prediction is a list, get the first item and check for "name"
-        if isinstance(prediction, list) and len(prediction) > 0:
-            # Check if the first element is a dict
-            if isinstance(prediction[0], dict):
-                print('prediction[0].get', prediction)
-                return prediction[0].get("name", "")
-            else:
-                return ""
-        elif isinstance(prediction, dict):
-            # If prediction is a dictionary, get the "name"
-            print('prediction dict', prediction)
-            return prediction.get("name", "")
+        # Check if the prediction is an ndarray (embedding)
+        if isinstance(prediction, np.ndarray):
+            prediction = prediction.tolist()  # Convert ndarray to list
         print(type(prediction), 'after')
+
+        # If prediction is tokenized (list of token IDs), decode it
+        if isinstance(prediction, list):
+            # Assuming the list contains token IDs, decode them
+            decoded_prediction = tokenizer.decode(prediction, skip_special_tokens=True)
+            print('decoded_prediction', decoded_prediction)
+            return decoded_prediction
+        # If prediction is already a string (decoded text)
+        elif isinstance(prediction, str):
+            return prediction
     except Exception as e:
         print(f"Error: {e}")
         return ""
