@@ -67,7 +67,7 @@ tokenizer.pad_token = tokenizer.eos_token
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
     device_map="auto",
-    attn_implementation="flash_attention_2"
+    # attn_implementation="flash_attention_2"
 )
 model = prepare_model_for_kbit_training(model)  
 # --- DATA PROCESSING ---

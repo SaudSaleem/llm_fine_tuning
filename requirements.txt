@@ -8,3 +8,4 @@ wandb
 tokenizers
 numpy
 evaluate
+torch
