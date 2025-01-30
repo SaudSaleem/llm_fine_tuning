@@ -257,7 +257,7 @@ def compute_metrics(eval_pred: EvalPrediction):
         else:
             assistant_part = pred  # Fallback if delimiter missing
         assistant_preds.append(assistant_part)
-    
+    print('assistant_preds hello', assistant_preds)
     # Calculate accuracy based on function names
     correct = 0
     total = len(decoded_labels)
