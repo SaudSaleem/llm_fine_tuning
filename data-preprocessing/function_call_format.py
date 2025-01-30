@@ -1,30 +1,43 @@
 import json
 import csv
 import os
+import ast 
 
 def process_output_json(output_str):
     try:
-        # Fix escaped quotes and parse JSON
-        json_str = output_str.replace('""', '"').replace("'", '"')  # Handle single quotes in input
-        data = json.loads(json_str)
+        # Attempt 1: Standard JSON parsing
+        json_str = output_str.replace('""', '"').replace("'", '"').strip()
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError:
+            # Attempt 2: Use ast.literal_eval as fallback
+            try:
+                data = ast.literal_eval(json_str)
+            except (SyntaxError, ValueError) as e:
+                print(f"JSON Parse Failed: {e}\nRaw String: {json_str}")
+                return None
 
         # Handle lists (e.g., third example)
         if isinstance(data, list):
+            valid_item = None
             for item in data:
-                # Skip entries with "role": "assistant"
                 if "role" in item:
                     continue
-                # Prioritize entries with "name" and parameters/arguments
                 if "name" in item and ("parameters" in item or "arguments" in item):
-                    data = item
+                    valid_item = item
                     break
-            else:
-                return None  # No valid entries found
+            if valid_item is None:
+                return None
+            data = valid_item
+
+        # Check if data is None after list processing
+        if data is None:
+            return None
 
         # Extract function name
         func_name = data["name"]
 
-        # Extract parameters from either "parameters.properties" or "arguments"
+        # Extract parameters
         if "arguments" in data:
             params = list(data["arguments"].keys())
         elif "parameters" in data and "properties" in data["parameters"]:
@@ -34,10 +47,9 @@ def process_output_json(output_str):
 
         return f"{func_name}({', '.join(params)})"
 
-    except (KeyError, json.JSONDecodeError) as e:
-        print(f"Error processing JSON: {e}")
+    except (KeyError, TypeError, AttributeError) as e:
+        print(f"Error: {e}\nData: {data}\nRaw Output: {output_str}")
         return None
-
 # Read input CSV
 # Read input CSV
 data_folder = "bitagent.data/samples"
