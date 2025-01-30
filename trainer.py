@@ -138,8 +138,8 @@ def print_trainable_parameters(model):
     )
 # model = prepare_model_for_kbit_training(model)
 peft_config = LoraConfig(
-    r=32,
-    lora_alpha=64,
+    r=16,
+    lora_alpha=32,
     target_modules=[
         "q_proj",
         "k_proj", 
@@ -169,6 +169,8 @@ training_args = TrainingArguments(
     eval_steps=100,
     save_strategy="epoch",
     load_best_model_at_end=True,
+    # save_total_limit=1,
+    # metric_for_best_model="eval_loss", 
     bf16=True,
     max_grad_norm=0.5,
     report_to="none",
