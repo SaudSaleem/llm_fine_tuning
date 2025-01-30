@@ -20,7 +20,7 @@ def convert_json_to_function_call(output_json_str):
 
 # Read input CSV
 data_folder = "bitagent.data/samples"
-input_file = "bfcl_sample.csv"
+input_file = "bfcl_processed.csv"
 with open(os.path.join(data_folder, input_file), 'r') as f:
     reader = csv.DictReader(f)
     rows = list(reader)
@@ -36,7 +36,7 @@ for row in rows:
         processed_data.append({"input": input_text, "output": new_output})
 
 # Save transformed data
-with open('transformed_data.csv', 'w', newline='') as f:
+with open('bfcl_function.csv', 'w', newline='') as f:
     writer = csv.DictWriter(f, fieldnames=['input', 'output'])
     writer.writeheader()
     writer.writerows(processed_data)
