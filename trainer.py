@@ -159,7 +159,7 @@ print_trainable_parameters(model)
 # --- TRAINING ARGS ---
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
-    per_device_train_batch_size=2,
+    per_device_train_batch_size=4,
     gradient_accumulation_steps=4,
     num_train_epochs=10,
     learning_rate=2e-5,
@@ -169,7 +169,7 @@ training_args = TrainingArguments(
     eval_steps=100,
     save_strategy="epoch",
     load_best_model_at_end=True,
-    # save_total_limit=1,
+    save_total_limit=1,
     # metric_for_best_model="eval_loss", 
     bf16=True,
     max_grad_norm=0.5,
