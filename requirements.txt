@@ -2,15 +2,9 @@ python-dotenv
 transformers
 peft
 datasets
-optuna
 pandas
 torch
-accelerate
-bitsandbytes
 wandb
-sentencepiece
 tokenizers
-scikit-learn
 numpy
-autoawq,
 evaluate
