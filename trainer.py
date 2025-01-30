@@ -174,7 +174,7 @@ training_args = TrainingArguments(
     bf16=True,
     max_grad_norm=0.5,
     report_to="none",
-    gradient_checkpointing=True,
+    # gradient_checkpointing=False,
 )
 
 
