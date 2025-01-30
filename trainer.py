@@ -119,6 +119,46 @@ def print_trainable_parameters(model):
     )
 
 print_trainable_parameters(model)
+def extract_top_function_names(text: str) -> list:
+    """Simplified extractor for standardized format"""
+    print('extract_top_function_names', text)
+    # Match "name": "function_name" patterns
+    functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
+    return list(set(functions))
+
+
+def compute_metrics(eval_pred: EvalPrediction):
+    predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=-1)
+    
+    # Replace -100 in labels with pad_token_id
+    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+    
+    # Decode predictions and labels
+    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=False)
+    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+    # print('total', "DECODED PREDICTIONS",decoded_preds, "ACTUAL LABELS", decoded_labels)
+    # Extract assistant's response from predictions (split after [/INST])
+    assistant_preds = []
+    for pred in decoded_preds:
+        # Split on the last occurrence of [/INST]
+        if "[/INST]" in pred:
+            assistant_part = pred.split("[/INST]")[-1].strip()
+        else:
+            assistant_part = pred  # Fallback if delimiter missing
+        assistant_preds.append(assistant_part)
+    print('assistant_preds hello', assistant_preds)
+    # Calculate accuracy based on function names
+    correct = 0
+    total = len(decoded_labels)
+    for pred, label in zip(assistant_preds, decoded_labels):
+        pred_funcs = extract_top_function_names(pred)
+        label_funcs = extract_top_function_names(label)
+        if set(pred_funcs) == set(label_funcs):
+            correct += 1
+        print('pred_funcs', pred_funcs, 'label_funcs', label_funcs, correct, set(pred_funcs), set(label_funcs))
+    print('accuracy', 'correct', correct, 'total', total)
+    return {"accuracy": correct / total if total > 0 else 0}
 # Define Sweep Configuration
 sweep_config = {
     'method': 'random',
@@ -190,44 +230,5 @@ def train_sweep():
 sweep_id = wandb.sweep(sweep_config, project="mistral-finetune-sweeps")
 wandb.agent(sweep_id, train_sweep, count=10)
 
-def extract_top_function_names(text: str) -> list:
-    """Simplified extractor for standardized format"""
-    print('extract_top_function_names', text)
-    # Match "name": "function_name" patterns
-    functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
-    return list(set(functions))
 
-
-def compute_metrics(eval_pred: EvalPrediction):
-    predictions, labels = eval_pred
-    predictions = np.argmax(predictions, axis=-1)
-    
-    # Replace -100 in labels with pad_token_id
-    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
-    
-    # Decode predictions and labels
-    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=False)
-    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-    # print('total', "DECODED PREDICTIONS",decoded_preds, "ACTUAL LABELS", decoded_labels)
-    # Extract assistant's response from predictions (split after [/INST])
-    assistant_preds = []
-    for pred in decoded_preds:
-        # Split on the last occurrence of [/INST]
-        if "[/INST]" in pred:
-            assistant_part = pred.split("[/INST]")[-1].strip()
-        else:
-            assistant_part = pred  # Fallback if delimiter missing
-        assistant_preds.append(assistant_part)
-    print('assistant_preds hello', assistant_preds)
-    # Calculate accuracy based on function names
-    correct = 0
-    total = len(decoded_labels)
-    for pred, label in zip(assistant_preds, decoded_labels):
-        pred_funcs = extract_top_function_names(pred)
-        label_funcs = extract_top_function_names(label)
-        if set(pred_funcs) == set(label_funcs):
-            correct += 1
-        print('pred_funcs', pred_funcs, 'label_funcs', label_funcs, correct, set(pred_funcs), set(label_funcs))
-    print('accuracy', 'correct', correct, 'total', total)
-    return {"accuracy": correct / total if total > 0 else 0}
 
