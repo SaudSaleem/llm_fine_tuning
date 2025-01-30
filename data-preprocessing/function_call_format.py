@@ -45,7 +45,7 @@ input_file = "bitagent_processed.csv"
 with open(os.path.join(data_folder, input_file), 'r') as f:
     reader = csv.DictReader(f)
     rows = list(reader)
-
+print(f"Total rows processed: {len(rows)}")
 # Process rows
 processed_data = []
 for row in rows:
@@ -60,7 +60,12 @@ for row in rows:
         })
 
 # Save transformed data
-with open(os.path.join(data_folder, 'bitagent_function.csv'), 'w', newline='') as f:
+output_file = os.path.join(data_folder, 'bitagent_function.csv')
+with open(output_file, 'w', newline='') as f:
     writer = csv.DictWriter(f, fieldnames=['input', 'output'])
     writer.writeheader()
     writer.writerows(processed_data)
+
+print(f"\nProcessing summary:")
+print(f"Valid conversations processed: {len(processed_data)}")
+print(f"Output saved to: {os.path.join(data_folder, output_file)}")
