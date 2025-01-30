@@ -5,9 +5,12 @@ import os
 data_folder = "bitagent.data/samples"
 output_file = "combined_dataset.csv"
 files_to_merge = [
-    "glaive_function.csv",
-    "bfcl_function.csv",
-    "bitagent_function.csv"
+    # "glaive_function.csv",
+    # "bfcl_function.csv",
+    # "bitagent_function.csv"
+    "glaive_processed.csv",
+    "bfcl_processed.csv",
+    "bitagent_processed.csv"
 ]
 
 def load_and_validate(file_path):

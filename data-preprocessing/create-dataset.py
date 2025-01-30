@@ -126,3 +126,15 @@ if __name__ == "__main__":
     sample_and_save_datasets()
     merged_path = merge_datasets()
     print(f"Merged dataset saved at: {merged_path}")
+
+with open('./bitagent_processed.py') as file:
+    exec(file.read())
+
+with open('./bfcl_processed.py') as file:
+    exec(file.read())
+
+with open('./glaive_processed.py') as file:
+    exec(file.read())
+
+with open('./combined_dataset.py') as file:
+    exec(file.read())
