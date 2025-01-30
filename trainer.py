@@ -155,11 +155,12 @@ peft_config = LoraConfig(
     modules_to_save=None
 )
 model = get_peft_model(model, peft_config)
+model.enable_input_require_grads()
 print_trainable_parameters(model)
 # --- TRAINING ARGS ---
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
-    per_device_train_batch_size=4,
+    per_device_train_batch_size=2,
     gradient_accumulation_steps=4,
     num_train_epochs=10,
     learning_rate=2e-5,
@@ -174,7 +175,7 @@ training_args = TrainingArguments(
     bf16=True,
     max_grad_norm=0.5,
     report_to="none",
-    # gradient_checkpointing=False,
+    gradient_checkpointing=True,
 )
 
 
