@@ -26,7 +26,7 @@ import transformers
 
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
-DATASET_PATH = "bitAgent.csv"
+DATASET_PATH = "bitAgent1.csv"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
@@ -170,7 +170,7 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     load_best_model_at_end=True,
     save_total_limit=1,
-    # metric_for_best_model="eval_loss", 
+    metric_for_best_model="accuracy", 
     bf16=True,
     max_grad_norm=0.5,
     report_to="none",
@@ -242,7 +242,7 @@ def compute_metrics(eval_pred: EvalPrediction):
         if set(pred_funcs) == set(label_funcs):
             correct += 1
         print('pred_funcs', pred_funcs, 'label_funcs', label_funcs, correct, set(pred_funcs), set(label_funcs))
-    
+    print('accuracy', 'correct', correct, 'total', total)
     return {"accuracy": correct / total if total > 0 else 0}
 # --- TRAINER ---
 trainer = Trainer(
