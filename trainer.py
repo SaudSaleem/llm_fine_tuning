@@ -151,7 +151,6 @@ training_args = TrainingArguments(
     max_grad_norm=0.3,
     report_to="none",
     gradient_checkpointing=True,
-    report_to="none",
     remove_unused_columns=False,
 )
 
