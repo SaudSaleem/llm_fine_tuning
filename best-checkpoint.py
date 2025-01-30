@@ -2,7 +2,7 @@ import os
 import json
 
 # Path to the directory containing checkpoints
-CHECKPOINT_DIR = "./models/fine-tuned-mistral-bitagent-latest"
+CHECKPOINT_DIR = "../models/fine-tuned-mistral-bitagent-latest"
 
 # Function to get evaluation loss from trainer_state.json
 def get_evaluation_loss(checkpoint_path):
