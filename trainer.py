@@ -27,6 +27,7 @@ import transformers
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
 DATASET_PATH = "bitAgent1.csv"
+OUTPUT_DIR_LOGS = "/home/user/saud/models/logs"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
@@ -159,7 +160,7 @@ model.enable_input_require_grads()
 print_trainable_parameters(model)
 # --- TRAINING ARGS ---
 training_args = TrainingArguments(
-    output_dir=OUTPUT_DIR,
+    output_dir=OUTPUT_DIR_LOGS,
     per_device_train_batch_size=4,
     gradient_accumulation_steps=4,
     num_train_epochs=10,
