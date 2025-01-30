@@ -1,5 +1,4 @@
 import os
-import re
 import wandb
 from typing import List, Dict, Any
 from datasets import Dataset
@@ -35,12 +34,13 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 login(token=HF_TOKEN)
 wandb.login()
 os.environ["WANDB_PROJECT"] = "mistral-finetune"
-
 # --- LOAD AND PREPROCESS DATASET ---
 df = pd.read_csv(DATASET_PATH)
 
 # Add system prompt to training data
 def format_training_example(row):
+    
+    
     return {
         "user": f"[INST] input: {row['input']} [/INST]",
         "assistant": f"{row['output']}</s>"
@@ -48,6 +48,7 @@ def format_training_example(row):
 
 # Create a list of formatted examples
 formatted_df = df.apply(format_training_example, axis=1)
+
 # Convert the formatted dataframe into a new DataFrame with 'user' and 'assistant' columns
 formatted_df = pd.DataFrame(formatted_df.tolist())
 
@@ -117,8 +118,44 @@ def print_trainable_parameters(model):
     print(
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
     )
-
+# model = prepare_model_for_kbit_training(model)
+peft_config = LoraConfig(
+    r=8,
+    lora_alpha=16,
+    target_modules=[
+        "q_proj",
+        "v_proj"
+    ],
+    bias="none",
+    lora_dropout=0.05,
+    task_type="CAUSAL_LM"
+)
+model = get_peft_model(model, peft_config)
+model.enable_input_require_grads()
 print_trainable_parameters(model)
+# --- TRAINING ARGS ---
+training_args = TrainingArguments(
+    output_dir=OUTPUT_DIR_LOGS,
+    per_device_train_batch_size=2,
+    gradient_accumulation_steps=8,
+    num_train_epochs=10,
+    learning_rate=2e-5,
+    optim="paged_adamw_32bit",
+    logging_steps=10,
+    eval_strategy="steps",
+    eval_steps=500,
+    save_strategy="steps",
+    load_best_model_at_end=True,
+    # save_total_limit=1,
+    metric_for_best_model="accuracy", 
+    bf16=True,
+    max_grad_norm=0.3,
+    gradient_checkpointing=True,
+    report_to="wandb",  # Enable wandb logging
+    run_name="mistral-finetune-run",  # Custom run name
+
+)
+
 def extract_top_function_names(text: str) -> list:
     """Simplified extractor for standardized format"""
     print('extract_top_function_names', text)
@@ -159,76 +196,20 @@ def compute_metrics(eval_pred: EvalPrediction):
         print('pred_funcs', pred_funcs, 'label_funcs', label_funcs, correct, set(pred_funcs), set(label_funcs))
     print('accuracy', 'correct', correct, 'total', total)
     return {"accuracy": correct / total if total > 0 else 0}
-# Define Sweep Configuration
-sweep_config = {
-    'method': 'random',
-    'metric': {'name': 'accuracy', 'goal': 'maximize'},
-    'parameters': {
-        'learning_rate': {'min': 1e-5, 'max': 3e-5},
-        'per_device_train_batch_size': {'values': [2, 4]},
-        'num_train_epochs': {'values': [5, 10]},
-        'lora_r': {'values': [4, 8, 16]},
-        'lora_alpha': {'values': [16, 32]},
-    }
-}
+# --- TRAINER ---
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_ds["train"],
+    eval_dataset=tokenized_ds["test"],
+    data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+    compute_metrics=compute_metrics,
+)
 
-# Initialize Sweep
-def train_sweep():
-    with wandb.init() as run:
-        config = run.config
-        
-        # Update Model Configuration
-        peft_config = LoraConfig(
-            r=config.lora_r,
-            lora_alpha=config.lora_alpha,
-            target_modules=["q_proj", "v_proj"],
-            bias="none",
-            lora_dropout=0.05,
-            task_type="CAUSAL_LM"
-        )
-        
-        # Reload Model with New Config
-        model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, device_map="auto")
-        model = prepare_model_for_kbit_training(model)
-        model = get_peft_model(model, peft_config)
-        model.enable_input_require_grads()
-
-        # Update Training Arguments
-        training_args = TrainingArguments(
-            output_dir=OUTPUT_DIR_LOGS,
-            per_device_train_batch_size=config.per_device_train_batch_size,
-            gradient_accumulation_steps=8,
-            num_train_epochs=config.num_train_epochs,
-            learning_rate=config.learning_rate,
-            optim="paged_adamw_32bit",
-            logging_steps=10,
-            eval_strategy="steps",
-            eval_steps=500,
-            report_to="wandb",
-            run_name=f"lr-{config.learning_rate}-bs-{config.per_device_train_batch_size}",
-            # Keep other arguments the same
-        )
-
-        # Create Trainer
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=tokenized_ds["train"],
-            eval_dataset=tokenized_ds["test"],
-            data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
-            compute_metrics=compute_metrics,
-        )
-
-        # Train and Save
-        trainer.train()
-        model.save_pretrained(OUTPUT_DIR)
-        tokenizer.save_pretrained(OUTPUT_DIR)
-        config = AutoConfig.from_pretrained(OUTPUT_DIR)
-        config.save_pretrained(OUTPUT_DIR)
-
-# Run Sweep Agent
-sweep_id = wandb.sweep(sweep_config, project="mistral-finetune-sweeps")
-wandb.agent(sweep_id, train_sweep, count=10)
-
-
-
+# --- TRAINING ---
+trainer.train()
+model.save_pretrained(OUTPUT_DIR)
+tokenizer.save_pretrained(OUTPUT_DIR)
+# Load the configuration from the fine-tuned model and save it to the same directory
+config = AutoConfig.from_pretrained(OUTPUT_DIR)
+config.save_pretrained(OUTPUT_DIR)
