@@ -1,23 +1,44 @@
 import json
 import csv
-import os 
-def convert_json_to_function_call(output_json_str):
+import os
+
+def process_output_json(output_str):
     try:
         # Fix escaped quotes and parse JSON
-        output_json = json.loads(output_json_str.replace('""', '"'))
-        
+        json_str = output_str.replace('""', '"').replace("'", '"')  # Handle single quotes in input
+        data = json.loads(json_str)
+
+        # Handle lists (e.g., third example)
+        if isinstance(data, list):
+            for item in data:
+                # Skip entries with "role": "assistant"
+                if "role" in item:
+                    continue
+                # Prioritize entries with "name" and parameters/arguments
+                if "name" in item and ("parameters" in item or "arguments" in item):
+                    data = item
+                    break
+            else:
+                return None  # No valid entries found
+
         # Extract function name
-        func_name = output_json["name"]
-        
-        # Extract parameters from "properties" keys (fallback if "required" is missing)
-        parameters = output_json["parameters"]["properties"].keys()
-        params_str = ", ".join(parameters)
-        
-        return f"{func_name}({params_str})"
-    except KeyError as e:
-        print(f"Key error: {e} in JSON: {output_json_str}")
+        func_name = data["name"]
+
+        # Extract parameters from either "parameters.properties" or "arguments"
+        if "arguments" in data:
+            params = list(data["arguments"].keys())
+        elif "parameters" in data and "properties" in data["parameters"]:
+            params = list(data["parameters"]["properties"].keys())
+        else:
+            params = []
+
+        return f"{func_name}({', '.join(params)})"
+
+    except (KeyError, json.JSONDecodeError) as e:
+        print(f"Error processing JSON: {e}")
         return None
 
+# Read input CSV
 # Read input CSV
 data_folder = "bitagent.data/samples"
 input_file = "bfcl_processed.csv"
@@ -29,11 +50,14 @@ with open(os.path.join(data_folder, input_file), 'r') as f:
 processed_data = []
 for row in rows:
     input_text = row['input']
-    output_text = row['output']
+    output_text = row['output'].strip()
     
-    new_output = convert_json_to_function_call(output_text)
+    new_output = process_output_json(output_text)
     if new_output:
-        processed_data.append({"input": input_text, "output": new_output})
+        processed_data.append({
+            "input": input_text,
+            "output": new_output
+        })
 
 # Save transformed data
 with open('bfcl_function.csv', 'w', newline='') as f:
