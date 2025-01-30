@@ -60,7 +60,7 @@ for row in rows:
         })
 
 # Save transformed data
-with open(os.path.join(data_folder, 'bfcl_function'), 'w', newline='') as f:
+with open(os.path.join(data_folder, 'bfcl_function.csv'), 'w', newline='') as f:
     writer = csv.DictWriter(f, fieldnames=['input', 'output'])
     writer.writeheader()
     writer.writerows(processed_data)
