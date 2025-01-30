@@ -1,5 +1,4 @@
 import os
-import re
 from typing import List, Dict, Any
 from datasets import Dataset
 from evaluate import load
@@ -55,11 +54,10 @@ formatted_df = pd.DataFrame(formatted_df.tolist())
 dataset = Dataset.from_pandas(formatted_df)
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
-# --- MODEL & TOKENIZER ---
 tokenizer = AutoTokenizer.from_pretrained(
     MODEL_NAME,
     padding_side="left",
-    add_eos_token=False,
+    add_eos_token=True,
     add_bos_token=True,
 )
 tokenizer.pad_token = tokenizer.eos_token
@@ -67,18 +65,18 @@ tokenizer.pad_token = tokenizer.eos_token
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
     device_map="auto",
-    # attn_implementation="flash_attention_2"
 )
-model = prepare_model_for_kbit_training(model)  
+model = prepare_model_for_kbit_training(model)
+
 # --- DATA PROCESSING ---
 def preprocess_function(examples):
     # Tokenize user and assistant together with special tokens
     combined_texts = [user + assistant for user, assistant in zip(examples["user"], examples["assistant"])]
     tokenized = tokenizer(
         combined_texts,
-        max_length=1024,
+        max_length=768,
         truncation=True,
-        padding=False,
+        padding="max_length",
         add_special_tokens=True  # Ensures BOS/EOS are added
     )
     
@@ -120,10 +118,12 @@ def print_trainable_parameters(model):
     )
 # model = prepare_model_for_kbit_training(model)
 peft_config = LoraConfig(
-     r=8,  # Reduced from 16
+    r=8,
     lora_alpha=16,
-    # target_modules=["q_proj", "v_proj", "gate_proj"]
-    target_modules=["q_proj", "v_proj"],  # Reduced target modules
+    target_modules=[
+        "q_proj",
+        "v_proj"
+    ],
     bias="none",
     lora_dropout=0.05,
     task_type="CAUSAL_LM"
@@ -137,7 +137,6 @@ training_args = TrainingArguments(
     per_device_train_batch_size=2,
     gradient_accumulation_steps=8,
     num_train_epochs=10,
-    # learning_rate=1.5e-5,
     learning_rate=2e-5,
     optim="paged_adamw_32bit",
     logging_steps=10,
@@ -151,7 +150,6 @@ training_args = TrainingArguments(
     max_grad_norm=0.3,
     report_to="none",
     gradient_checkpointing=True,
-    remove_unused_columns=False,
 )
 
 def extract_top_function_names(text: str) -> list:
