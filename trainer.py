@@ -165,7 +165,7 @@ def train_sweep():
             eval_strategy="steps",
             eval_steps=500,
             report_to="wandb",
-            run_name=f"lr-{config.learning_rate}-bs-{config.batch_size}",
+            run_name=f"lr-{config.learning_rate}-bs-{config.per_device_train_batch_size}",
             # Keep other arguments the same
         )
 
