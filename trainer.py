@@ -159,11 +159,11 @@ print_trainable_parameters(model)
 # --- TRAINING ARGS ---
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
-    per_device_train_batch_size=2,
-    gradient_accumulation_steps=8,
+    per_device_train_batch_size=4,
+    gradient_accumulation_steps=4,
     num_train_epochs=10,
     learning_rate=2e-5,
-    optim="paged_adamw_8bit",
+    optim="paged_adamw_32bit",
     logging_steps=10,
     eval_strategy="epoch",
     eval_steps=100,
