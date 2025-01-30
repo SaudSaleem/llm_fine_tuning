@@ -62,13 +62,7 @@ df = pd.read_csv(DATASET_PATH)
 
 # Add system prompt to training data
 def format_training_example(row):
-    system_prompt = """Respond ONLY with JSON containing "name" key for function calls. Example:
-    {
-        "name": "function_name",
-        "parameters": {
-            "param1": "value1"
-        }
-    }"""
+    system_prompt = """Respond with "name" key for function call."""
     
     return {
         "user": f"[INST] {system_prompt}\ninput: {row['input']} [/INST]",
