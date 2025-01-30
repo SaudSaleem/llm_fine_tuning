@@ -16,14 +16,15 @@ from transformers import (
     TrainingArguments,
     Trainer,
     DataCollatorForLanguageModeling,
-    EvalPrediction
+    EvalPrediction,
+    AutoConfig
 )
 from peft import (
     prepare_model_for_kbit_training,
     LoraConfig,
     get_peft_model,
 )
-import transformers
+
 
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
@@ -230,7 +231,7 @@ training_args = TrainingArguments(
 
 def extract_top_function_names(text: str) -> list:
     """Simplified extractor for standardized format"""
-    # print('extract_top_function_names', text)
+    print('extract_top_function_names', text)
     # Match "name": "function_name" patterns
     functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
     return list(set(functions))
@@ -282,3 +283,6 @@ trainer = Trainer(
 trainer.train()
 model.save_pretrained(OUTPUT_DIR)
 tokenizer.save_pretrained(OUTPUT_DIR)
+# Load the configuration from the fine-tuned model and save it to the same directory
+config = AutoConfig.from_pretrained(OUTPUT_DIR)
+config.save_pretrained(OUTPUT_DIR)
