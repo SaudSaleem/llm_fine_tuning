@@ -64,4 +64,4 @@ with open('bfcl_function.csv', 'w', newline='') as f:
     writer = csv.DictWriter(f, fieldnames=['input', 'output'])
     writer.writeheader()
     writer.writerows(processed_data)
-print('saved file')
+print('saved file', processed_data)
