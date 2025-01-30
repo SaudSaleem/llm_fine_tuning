@@ -41,7 +41,7 @@ def process_output_json(output_str):
 # Read input CSV
 # Read input CSV
 data_folder = "bitagent.data/samples"
-input_file = "bfcl_processed.csv"
+input_file = "bitagent_processed.csv"
 with open(os.path.join(data_folder, input_file), 'r') as f:
     reader = csv.DictReader(f)
     rows = list(reader)
@@ -60,7 +60,7 @@ for row in rows:
         })
 
 # Save transformed data
-with open(os.path.join(data_folder, 'bfcl_function.csv'), 'w', newline='') as f:
+with open(os.path.join(data_folder, 'bitagent_function.csv'), 'w', newline='') as f:
     writer = csv.DictWriter(f, fieldnames=['input', 'output'])
     writer.writeheader()
     writer.writerows(processed_data)
