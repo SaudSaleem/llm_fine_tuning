@@ -1,4 +1,5 @@
 import os
+import wandb
 from typing import List, Dict, Any
 from datasets import Dataset
 from evaluate import load
@@ -31,7 +32,8 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 
 # --- LOGIN TO HUGGINGFACE ---
 login(token=HF_TOKEN)
-
+wandb.login()
+os.environ["WANDB_PROJECT"] = "mistral-finetune"
 # --- LOAD AND PREPROCESS DATASET ---
 df = pd.read_csv(DATASET_PATH)
 
@@ -148,8 +150,10 @@ training_args = TrainingArguments(
     metric_for_best_model="accuracy", 
     bf16=True,
     max_grad_norm=0.3,
-    report_to="none",
     gradient_checkpointing=True,
+    report_to="wandb",  # Enable wandb logging
+    run_name="mistral-finetune-run",  # Custom run name
+
 )
 
 def extract_top_function_names(text: str) -> list:
