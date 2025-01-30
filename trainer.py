@@ -59,46 +59,30 @@ formatted_df = pd.DataFrame(formatted_df.tolist())
 dataset = Dataset.from_pandas(formatted_df)
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_NAME,
-    device_map="auto",
-)
-
+# --- MODEL & TOKENIZER ---
 tokenizer = AutoTokenizer.from_pretrained(
     MODEL_NAME,
     padding_side="left",
-    add_eos_token=True,
+    add_eos_token=False,
     add_bos_token=True,
 )
 tokenizer.pad_token = tokenizer.eos_token
 
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_NAME,
+    device_map="auto",
+    attn_implementation="flash_attention_2"
+)
+model = prepare_model_for_kbit_training(model)  
 # --- DATA PROCESSING ---
-# def preprocess_function(examples):
-#     # print('saleem', examples['user'], examples['assistant'])
-#     tokenized = tokenizer(
-#         examples["user"],
-#         text_target=examples["assistant"],
-#         max_length=256,
-#         truncation=True,
-#         padding="max_length",
-#     )
-#     # Mask user input in labels
-#     user_tokens = tokenizer(examples["user"], add_special_tokens=False)["input_ids"]
-#     labels = [-100]*len(user_tokens) + tokenized["labels"][len(user_tokens):]
-
-#     return {
-#         "input_ids": tokenized["input_ids"],
-#         "attention_mask": tokenized["attention_mask"],
-#         "labels": labels
-#     }
 def preprocess_function(examples):
     # Tokenize user and assistant together with special tokens
     combined_texts = [user + assistant for user, assistant in zip(examples["user"], examples["assistant"])]
     tokenized = tokenizer(
         combined_texts,
-        max_length=768,
+        max_length=1024,
         truncation=True,
-        padding="max_length",
+        padding=False,
         add_special_tokens=True  # Ensures BOS/EOS are added
     )
     
@@ -124,7 +108,7 @@ def preprocess_function(examples):
 tokenized_ds = train_test_split.map(
     preprocess_function,
     batched=True,
-    batch_size=128
+    batch_size=64
 )
 
 # --- LORA CONFIG ---
@@ -140,21 +124,13 @@ def print_trainable_parameters(model):
     )
 # model = prepare_model_for_kbit_training(model)
 peft_config = LoraConfig(
-    r=16,
-    lora_alpha=32,
-    target_modules=[
-        "q_proj",
-        "k_proj", 
-        "v_proj",
-        "o_proj",
-        "gate_proj",
-        "up_proj",
-        "down_proj"
-    ],
+     r=8,  # Reduced from 16
+    lora_alpha=16,
+    # target_modules=["q_proj", "v_proj", "gate_proj"]
+    target_modules=["q_proj", "v_proj"],  # Reduced target modules
     bias="none",
-    lora_dropout=0.1,
-    task_type="CAUSAL_LM",
-    modules_to_save=None
+    lora_dropout=0.05,
+    task_type="CAUSAL_LM"
 )
 model = get_peft_model(model, peft_config)
 model.enable_input_require_grads()
@@ -162,50 +138,26 @@ print_trainable_parameters(model)
 # --- TRAINING ARGS ---
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR_LOGS,
-    per_device_train_batch_size=4,
-    gradient_accumulation_steps=4,
+    per_device_train_batch_size=2,
+    gradient_accumulation_steps=8,
     num_train_epochs=10,
+    # learning_rate=1.5e-5,
     learning_rate=2e-5,
     optim="paged_adamw_32bit",
     logging_steps=10,
-    eval_strategy="epoch",
-    eval_steps=100,
-    save_strategy="epoch",
+    eval_strategy="steps",
+    eval_steps=500,
+    save_strategy="steps",
     load_best_model_at_end=True,
     # save_total_limit=1,
     metric_for_best_model="accuracy", 
     bf16=True,
-    max_grad_norm=0.5,
+    max_grad_norm=0.3,
     report_to="none",
     gradient_checkpointing=True,
+    report_to="none",
+    remove_unused_columns=False,
 )
-
-
-# def compute_metrics(eval_pred: EvalPrediction):
-#     # Get predictions and labels
-#     predictions, labels = eval_pred
-#     print('predictions shape', predictions.shape, 'labels shape', labels.shape)
-#     # Convert logits to token IDs (assuming classification head)
-#     predictions = np.argmax(predictions, axis=-1)
-#     print('predictions shape after processing', predictions.shape)
-#     # Remove ignored indices (often -100)
-#     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
-#     print("Processed Labels", labels)
-#     # Decode sequences
-#     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
-#     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-
-#     correct = 0
-#     total = len(decoded_labels)
-#     print('total', total, "DECODED PREDICTIONS",decoded_preds, "ACTUAL LABELS", decoded_labels)
-#     for pred, label in zip(decoded_preds, decoded_labels):
-#         pred_functions = extract_top_function_names(pred)
-#         label_functions = extract_top_function_names(label)
-#         # print('pred_functions', pred_functions, 'label_functions', label_functions, set(pred_functions), set(label_functions))
-#         if set(pred_functions) == set(label_functions):
-#             correct += 1
-
-#     return {"accuracy": correct / total if total > 0 else 0}
 
 def extract_top_function_names(text: str) -> list:
     """Simplified extractor for standardized format"""
