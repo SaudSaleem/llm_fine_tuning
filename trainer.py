@@ -62,12 +62,16 @@ df = pd.read_csv(DATASET_PATH)
 
 # Add system prompt to training data
 def format_training_example(row):
-    # system_prompt = """Respond ONLY with function call. Example:
-    # User: What is the distance from Los Angeles to New York
-    # Assistant: calculate_distance(destination="New York", origin="Los Angeles")"""
+    system_prompt = """Respond ONLY with JSON containing "name" key for function calls. Example:
+    {
+        "name": "function_name",
+        "parameters": {
+            "param1": "value1"
+        }
+    }"""
     
     return {
-        "user": f"[INST] input: {row['input']} [/INST]",
+        "user": f"[INST] {system_prompt}\ninput: {row['input']} [/INST]",
         "assistant": f"{row['output']}</s>"
     }
 
