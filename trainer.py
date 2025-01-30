@@ -33,26 +33,6 @@ OUTPUT_DIR_LOGS = "/home/user/saud/models/logs"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-# Function to remove all files inside a directory
-def remove_files_in_directory(directory):
-    # Ensure the directory exists
-    if os.path.exists(directory):
-        # Loop through all files and directories inside and delete them
-        for file_name in os.listdir(directory):
-            file_path = os.path.join(directory, file_name)
-            try:
-                if os.path.isdir(file_path):
-                    shutil.rmtree(file_path)  # Remove directory and its contents
-                else:
-                    os.remove(file_path)  # Remove file
-            except Exception as e:
-                print(f"Error while deleting {file_path}: {e}")
-    else:
-        print(f"Directory {directory} does not exist.")
-
-# Remove files inside the directories
-remove_files_in_directory(OUTPUT_DIR_LOGS)
-remove_files_in_directory(OUTPUT_DIR)
 
 # --- LOGIN TO HUGGINGFACE ---
 login(token=HF_TOKEN)
@@ -62,10 +42,10 @@ df = pd.read_csv(DATASET_PATH)
 
 # Add system prompt to training data
 def format_training_example(row):
-    system_prompt = """Respond with "name" key for function call."""
+    
     
     return {
-        "user": f"[INST] {system_prompt}\ninput: {row['input']} [/INST]",
+        "user": f"[INST] input: {row['input']} [/INST]",
         "assistant": f"{row['output']}</s>"
     }
 
