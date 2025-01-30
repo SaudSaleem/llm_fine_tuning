@@ -159,11 +159,11 @@ print_trainable_parameters(model)
 # --- TRAINING ARGS ---
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
-    per_device_train_batch_size=4,
-    gradient_accumulation_steps=4,
+    per_device_train_batch_size=2,
+    gradient_accumulation_steps=8,
     num_train_epochs=10,
     learning_rate=2e-5,
-    optim="paged_adamw_32bit",
+    optim="paged_adamw_8bit",
     logging_steps=10,
     eval_strategy="epoch",
     eval_steps=100,
@@ -174,7 +174,7 @@ training_args = TrainingArguments(
     bf16=True,
     max_grad_norm=0.5,
     report_to="none",
-    gradient_checkpointing=False,
+    gradient_checkpointing=True,
 )
 
 
