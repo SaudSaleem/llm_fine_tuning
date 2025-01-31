@@ -1,16 +1,21 @@
 import pandas as pd
 import os
 
+# MAKE DATA IN FUNCTION CALL FORMAT
+try:
+    with open('data-preprocessing/function_call_format.py') as file:
+        exec(file.read())
+except Exception as e:
+    print(f"Error during preprocessing: {e}")
+    exit()  # Stop execution if preprocessing fails
+
 # Define paths
 data_folder = "bitagent.data/samples"
 output_file = "combined_dataset.csv"
 files_to_merge = [
-    # "glaive_function.csv",
-    # "bfcl_function.csv",
-    # "bitagent_function.csv"
-    "glaive_processed.csv",
-    "bfcl_processed.csv",
-    "bitagent_processed.csv"
+    "glaive_function.csv",
+    "bfcl_function.csv",
+    "bitagent_function.csv"
 ]
 
 def load_and_validate(file_path):

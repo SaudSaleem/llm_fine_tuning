@@ -123,18 +123,25 @@ def merge_datasets(data_folder="data-preprocessing/bitagent.data/samples"):
 
 
 if __name__ == "__main__":
+    # Step 1: Download and sample datasets
     sample_and_save_datasets()
-    merged_path = merge_datasets()
-    print(f"Merged dataset saved at: {merged_path}")
-
-with open('data-preprocessing/bitagent_processed.py') as file:
-    exec(file.read())
-
-with open('data-preprocessing/bfcl_processed.py') as file:
-    exec(file.read())
-
-with open('data-preprocessing/glaive_processed.py') as file:
-    exec(file.read())
-
-with open('data-preprocessing/combined_dataset.py') as file:
-    exec(file.read())
+    
+    # Step 2: Merge the sampled datasets
+    # merged_path = merge_datasets()
+    # print(f"Merged dataset saved at: {merged_path}")
+    
+    # Step 3: Process each dataset
+    # Execute processing scripts in sequence
+    processing_scripts = [
+        'data-preprocessing/bitagent_processed.py',
+        'data-preprocessing/bfcl_processed.py',
+        'data-preprocessing/glaive_processed.py',
+        'data-preprocessing/combined_dataset.py'
+    ]
+    
+    for script in processing_scripts:
+        logger.info(f"Executing processing script: {script}")
+        with open(script) as file:
+            exec(file.read())
+    
+    logger.info("All data processing steps completed successfully.")
