@@ -20,8 +20,8 @@ class JSONDatasetIterator:
 
         # Load data from JSON files
         for filename in ["java", "javascript", "simple", "multiple", "sql", "live_simple", "live_multiple"]:
-            bfcl_path = f"bitagent.data/bfcl/BFCL_v3_{filename}.json"
-            bfcl_answer_path = f"bitagent.data/bfcl/possible_answer/BFCL_v3_{filename}.json"
+            bfcl_path = f"data-preprocessing/bitagent.data/bfcl/BFCL_v3_{filename}.json"
+            bfcl_answer_path = f"data-preprocessing/bitagent.data/bfcl/possible_answer/BFCL_v3_{filename}.json"
             if os.path.exists(bfcl_path) and os.path.exists(bfcl_answer_path):
                 df_data = pd.read_json(bfcl_path, lines=True)
                 df_answer = pd.read_json(bfcl_answer_path, lines=True)
@@ -44,7 +44,7 @@ class JSONDatasetIterator:
             raise StopIteration
 
 
-def huggingface_loader(dataset_name, root_data_dir="bitagent.data", split="train", name=None):
+def huggingface_loader(dataset_name, root_data_dir="data-preprocessing/bitagent.data", split="train", name=None):
     logger.debug(f"Loading {dataset_name}")
     dataset_dir = f"{root_data_dir}/{dataset_name.replace('/', '_')}"
     if os.path.exists(f"{dataset_dir}/state.json"):
@@ -58,17 +58,17 @@ def huggingface_loader(dataset_name, root_data_dir="bitagent.data", split="train
     return ds
 
 
-def load_bfcl_dataset(dataset_name, root_data_dir="bitagent.data", split="train", name=None):
+def load_bfcl_dataset(dataset_name, root_data_dir="data-preprocessing/bitagent.data", split="train", name=None):
     snapshot_download(
         repo_id=dataset_name,
         allow_patterns="*.json",
         repo_type="dataset",
-        local_dir="bitagent.data/bfcl/"
+        local_dir="data-preprocessing/bitagent.data/bfcl/"
     )
     return JSONDatasetIterator()
 
 
-def sample_and_save_datasets(output_dir="bitagent.data/samples", sample_size=1000):
+def sample_and_save_datasets(output_dir="data-preprocessing/bitagent.data/samples", sample_size=1000):
     os.makedirs(output_dir, exist_ok=True)
 
     try:
@@ -98,7 +98,7 @@ def sample_and_save_datasets(output_dir="bitagent.data/samples", sample_size=100
         logger.error(f"Error processing BFCL dataset: {str(e)}")
 
 
-def merge_datasets(data_folder="bitagent.data/samples"):
+def merge_datasets(data_folder="data-preprocessing/bitagent.data/samples"):
     bfcl = pd.read_csv(os.path.join(data_folder, "bfcl_sample.csv"))
     bitagent = pd.read_csv(os.path.join(data_folder, "bitagent_sample.csv"))
     glaive = pd.read_csv(os.path.join(data_folder, "glaive_sample.csv"))
@@ -127,14 +127,14 @@ if __name__ == "__main__":
     merged_path = merge_datasets()
     print(f"Merged dataset saved at: {merged_path}")
 
-with open('./bitagent_processed.py') as file:
+with open('data-preprocessing/bitagent_processed.py') as file:
     exec(file.read())
 
-with open('./bfcl_processed.py') as file:
+with open('data-preprocessing/bfcl_processed.py') as file:
     exec(file.read())
 
-with open('./glaive_processed.py') as file:
+with open('data-preprocessing/glaive_processed.py') as file:
     exec(file.read())
 
-with open('./combined_dataset.py') as file:
+with open('data-preprocessing/combined_dataset.py') as file:
     exec(file.read())
