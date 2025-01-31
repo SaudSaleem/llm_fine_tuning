@@ -81,6 +81,14 @@ def sample_and_save_datasets(output_dir="data-preprocessing/bitagent.data/sample
         logger.error(f"Error processing Glaive dataset: {str(e)}")
 
     try:
+        bfcl_ds = load_bfcl_dataset("gorilla-llm/Berkeley-Function-Calling-Leaderboard")
+        bfcl_sample = pd.DataFrame(list(bfcl_ds))
+        bfcl_sample.to_csv(f"{output_dir}/bfcl_sample.csv", index=False)
+        logger.info(f"Saved BFCL sample to {output_dir}/bfcl_sample.csv")
+    except Exception as e:
+        logger.error(f"Error processing BFCL dataset: {str(e)}")
+
+    try:
         bitagent_ds = huggingface_loader("BitAgent/tool_calling")
         bitagent_df = pd.DataFrame(bitagent_ds)
         bitagent_sample = bitagent_df.sample(n=min(500000, len(bitagent_df)))
@@ -88,14 +96,6 @@ def sample_and_save_datasets(output_dir="data-preprocessing/bitagent.data/sample
         logger.info(f"Saved BitAgent sample to {output_dir}/bitagent_sample.csv")
     except Exception as e:
         logger.error(f"Error processing BitAgent dataset: {str(e)}")
-
-    try:
-        bfcl_ds = load_bfcl_dataset("gorilla-llm/Berkeley-Function-Calling-Leaderboard")
-        bfcl_sample = pd.DataFrame(list(bfcl_ds))
-        bfcl_sample.to_csv(f"{output_dir}/bfcl_sample.csv", index=False)
-        logger.info(f"Saved BFCL sample to {output_dir}/bfcl_sample.csv")
-    except Exception as e:
-        logger.error(f"Error processing BFCL dataset: {str(e)}")
 
 
 def merge_datasets(data_folder="data-preprocessing/bitagent.data/samples"):
@@ -127,14 +127,14 @@ if __name__ == "__main__":
     merged_path = merge_datasets()
     print(f"Merged dataset saved at: {merged_path}")
 
-with open('./data-preprocessing/bitagent_processed.py') as file:
+with open('data-preprocessing/bitagent_processed.py') as file:
     exec(file.read())
 
-with open('./data-preprocessing/bfcl_processed.py') as file:
+with open('data-preprocessing/bfcl_processed.py') as file:
     exec(file.read())
 
-with open('./data-preprocessing/glaive_processed.py') as file:
+with open('data-preprocessing/glaive_processed.py') as file:
     exec(file.read())
 
-with open('./data-preprocessing/combined_dataset.py') as file:
+with open('data-preprocessing/combined_dataset.py') as file:
     exec(file.read())
