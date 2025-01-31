@@ -9,3 +9,5 @@ tokenizers
 numpy
 evaluate
 torch
+autoawq
+bitsandbytes
