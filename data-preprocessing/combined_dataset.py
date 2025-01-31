@@ -1,10 +1,27 @@
 import pandas as pd
 import os
+import logging
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 # MAKE DATA IN FUNCTION CALL FORMAT
 try:
-    with open('data-preprocessing/function_call_format.py') as file:
-        exec(file.read())
+    processing_scripts = [
+        'data-preprocessing/bitagent_processed.py',
+        'data-preprocessing/bfcl_processed.py',
+        'data-preprocessing/glaive_processed.py',
+        'data-preprocessing/function_call_format.py'
+    ]
+    
+    for script in processing_scripts:
+        logger.info(f"Executing processing script: {script}")
+        with open(script) as file:
+            exec(file.read())
+    
+    logger.info("All data processing steps completed successfully.")
 except Exception as e:
     print(f"Error during preprocessing: {e}")
     exit()  # Stop execution if preprocessing fails

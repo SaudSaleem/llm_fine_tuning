@@ -132,16 +132,3 @@ if __name__ == "__main__":
     
     # Step 3: Process each dataset
     # Execute processing scripts in sequence
-    processing_scripts = [
-        'data-preprocessing/bitagent_processed.py',
-        'data-preprocessing/bfcl_processed.py',
-        'data-preprocessing/glaive_processed.py',
-        'data-preprocessing/combined_dataset.py'
-    ]
-    
-    for script in processing_scripts:
-        logger.info(f"Executing processing script: {script}")
-        with open(script) as file:
-            exec(file.read())
-    
-    logger.info("All data processing steps completed successfully.")
