@@ -127,14 +127,14 @@ if __name__ == "__main__":
     merged_path = merge_datasets()
     print(f"Merged dataset saved at: {merged_path}")
 
-with open('data-preprocessing/bitagent_processed.py') as file:
+with open('./data-preprocessing/bitagent_processed.py') as file:
     exec(file.read())
 
-with open('data-preprocessing/bfcl_processed.py') as file:
+with open('./data-preprocessing/bfcl_processed.py') as file:
     exec(file.read())
 
-with open('data-preprocessing/glaive_processed.py') as file:
+with open('./data-preprocessing/glaive_processed.py') as file:
     exec(file.read())
 
-with open('data-preprocessing/combined_dataset.py') as file:
+with open('./data-preprocessing/combined_dataset.py') as file:
     exec(file.read())
