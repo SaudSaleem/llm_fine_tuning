@@ -27,7 +27,7 @@ except Exception as e:
     exit()  # Stop execution if preprocessing fails
 
 # Define paths
-data_folder = "bitagent.data/samples"
+data_folder = "data-preprocessing/bitagent.data/samples"
 output_file = "combined_dataset.csv"
 files_to_merge = [
     "glaive_function.csv",
