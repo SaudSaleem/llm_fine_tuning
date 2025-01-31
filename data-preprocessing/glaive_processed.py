@@ -36,7 +36,7 @@ def extract_functions(system_text):
     return functions
 
 # Define paths
-data_folder = "bitagent.data/samples"
+data_folder = "data-preprocessing/bitagent.data/samples"
 input_file = "glaive_sample.csv"
 output_file = "glaive_processed.csv"
 

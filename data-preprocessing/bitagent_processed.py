@@ -4,7 +4,7 @@ import os
 from ast import literal_eval
 
 # Define paths
-data_folder = "bitagent.data/samples"
+data_folder = "data-preprocessing/bitagent.data/samples"
 input_file = "bitagent_sample.csv"
 output_file = "bitagent_processed.csv"
 
