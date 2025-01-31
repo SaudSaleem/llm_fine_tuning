@@ -2,53 +2,33 @@ import json
 import csv
 import os
 import ast
+import re
 
 def process_output_json(output_str):
     try:
-        # Attempt 1: Standard JSON parsing
-        json_str = output_str.replace('""', '"').replace("'", '"').strip()
-        try:
-            data = json.loads(json_str)
-        except json.JSONDecodeError:
-            # Attempt 2: Use ast.literal_eval as fallback
-            try:
-                data = ast.literal_eval(json_str)
-            except (SyntaxError, ValueError) as e:
-                print(f"JSON Parse Failed: {e}\nRaw String: {json_str}")
-                return None
-
-        # Handle lists (e.g., third example)
-        if isinstance(data, list):
-            valid_item = None
-            for item in data:
-                if "role" in item:
-                    continue
-                if "name" in item and ("parameters" in item or "arguments" in item):
-                    valid_item = item
-                    break
-            if valid_item is None:
-                return None
-            data = valid_item
-
-        # Check if data is None after list processing
-        if data is None:
+        # Attempt 1: Use regex to extract function name and parameters directly
+        func_name_match = re.search(r'"name"\s*:\s*"([^"]+)"', output_str)
+        if not func_name_match:
             return None
+        func_name = func_name_match.group(1)
 
-        # Extract function name
-        func_name = data["name"]
-
-        # Extract parameters
-        if "arguments" in data:
-            params = list(data["arguments"].keys())
-        elif "parameters" in data and "properties" in data["parameters"]:
-            params = list(data["parameters"]["properties"].keys())
+        params = []
+        # Check for arguments
+        args_match = re.search(r'"arguments"\s*:\s*{([^}]+)}', output_str)
+        if args_match:
+            args_content = args_match.group(1)
+            params = re.findall(r'"([^"]+)"\s*:', args_content)
         else:
-            params = []
+            # Check for parameters with properties
+            params_match = re.search(r'"parameters"\s*:\s*{\s*"properties"\s*:\s*{([^}]+)}', output_str)
+            if params_match:
+                props_content = params_match.group(1)
+                params = re.findall(r'"([^"]+)"\s*:', props_content)
 
         return f"{func_name}({', '.join(params)})"
 
-    except (KeyError, TypeError, AttributeError) as e:
-        print(f"Error: {e}\nData: {data}\nRaw Output: {output_str}")
+    except Exception as e:
+        print(f"Error: {e}\nRaw Output: {output_str}")
         return None
 
 # Define file pairs to process
