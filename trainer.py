@@ -58,7 +58,11 @@ dataset = Dataset.from_pandas(formatted_df)
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-tokenizer.pad_token = tokenizer.eos_token 
+tokenizer.padding_side = 'right'
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.add_eos_token = True
+tokenizer.add_bos_token, tokenizer.add_eos_token
+
 data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False)
 model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, device_map="auto",)
 model = prepare_model_for_kbit_training(model)
@@ -83,23 +87,16 @@ def tokenize_function(example):
         "labels": labels
     }
 
-tokenized_ds = tokenizer.apply_chat_template(train_test_split, return_tensors="pt")
-model_inputs = tokenized_ds.to('cuda')
-model.to('cuda')
-
-generated_ids = model.generate(model_inputs, max_new_tokens=1000, do_sample=True)
-decoded = tokenizer.batch_decode(generated_ids)
-print(decoded[0])
 # tokenized_ds = train_test_split.map(
 #     tokenize_function,
 #     lambda examples: tokenizer(examples["messages"], truncation=True, max_length=512),
 #     batched=True
 # )
-# tokenized_ds = train_test_split.map(
-#     tokenize_function,
-#     batched=False,
-#     # batch_size=64
-# )
+tokenized_ds = train_test_split.map(
+    tokenize_function,
+    batched=False,
+    # batch_size=64
+)
 tokenn = tokenized_ds["train"][0]
 # Print the raw tokenized dictionary
 print("test 123 tokenizer:", tokenn)
