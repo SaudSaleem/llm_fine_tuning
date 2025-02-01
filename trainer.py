@@ -95,7 +95,7 @@ tokenized_ds = formatted_dataset.map(tokenize_function, batched=True)
 # )
 tokenn = tokenized_ds["train"][0]
 # Print the raw tokenized dictionary
-print("test 123 tokenizer:", tokenn)
+print("test 123 tokenizer:", tokenn, 'tokenized_ds', tokenized_ds)
 
 # Decode input tokens
 decoded_text = tokenizer.decode(tokenn["input_ids"])
