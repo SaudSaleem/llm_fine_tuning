@@ -11,3 +11,4 @@ evaluate
 torch
 autoawq
 bitsandbytes
+scikit-learn
