@@ -58,6 +58,7 @@ train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 tokenizer.pad_token = tokenizer.eos_token 
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, device_map="auto",)
 model = prepare_model_for_kbit_training(model)
 
