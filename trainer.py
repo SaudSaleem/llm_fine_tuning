@@ -40,7 +40,7 @@ WEIGHT_ARGUMENTS = 0.3
 # --- LOAD AND PREPROCESS DATASET ---
 # df = pd.read_csv(DATASET_PATH)
 dataset = load_dataset('csv', data_files=DATASET_PATH)
-dataset = dataset['train'].select(range(100))
+dataset = dataset['train'].select(range(100000))
 # Display a sample
 print("said", dataset)
 # Add system prompt to training data
