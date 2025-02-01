@@ -1,54 +1,47 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import os
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel  # Import PEFT for LoRA adapters
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use GPU ID 0, modify as needed
-# Check device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# print("Device:", device)
+# Define paths
+BASE_MODEL_DIR = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"  # Your base model from Hugging Face
+LORA_MODEL_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"  # Your fine-tuned LoRA model
 
-def test_finetuned_model(model_path, prompt, max_length=100, num_beams=4):
-    try:
-        # Load tokenizer and model, move model to device
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
-        model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto", low_cpu_mem_usage=True)
-        # Try moving the model to the GPU
-        model = model.to(device)
+# Load the base model
+base_model = AutoModelForCausalLM.from_pretrained(BASE_MODEL_DIR)
 
-        # # Check the model's device
-        # if next(model.parameters()).device.type == "cuda":
-        #     print("The model is successfully moved to GPU.")
-        # else:
-        #     print("The model is running on CPU.")
+# Load the LoRA adapters
+model = PeftModel.from_pretrained(base_model, LORA_MODEL_DIR)
+model.eval()  # Set model to evaluation mode
 
-        # Tokenize input and move tensors to the same device
-        inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
-        input_ids = inputs["input_ids"].to(device)
-        attention_mask = inputs["attention_mask"].to(device)
+# Load the tokenizer (from the base model)
+tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_DIR)
 
-        # Generate response
-        output = model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
+def generate_response(prompt, max_length=200):
+    """
+    Generates a response using the fine-tuned LoRA model.
+
+    :param prompt: Input text for the model
+    :param max_length: Maximum length of the generated response
+    :return: Model-generated response as text
+    """
+    inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
+
+    with torch.no_grad():
+        outputs = model.generate(
+            input_ids=inputs.input_ids,
+            attention_mask=inputs.attention_mask,
             max_length=max_length,
-            num_beams=num_beams,
-            pad_token_id=tokenizer.eos_token_id,
-            early_stopping=True
+            do_sample=True,
+            temperature=0.7,
+            top_k=50,
+            top_p=0.9,
         )
 
-        # Decode and return response
-        response = tokenizer.decode(output[0], skip_special_tokens=True)
-        return response
+    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return response
 
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-
-# Define model path and prompt
-model_path = "saudsaleem/fine-tuned-mistral"
-#model_path = "saudsaleem/mistral-bitagent-latest"
-prompt = input("Please enter a prompt: ")
-
-# Test model
-response = test_finetuned_model(model_path, prompt)
-print("Generated Response:", response)
+# Example usage
+if __name__ == "__main__":
+    test_prompt = "Send an email to a recipient"
+    response = generate_response(test_prompt)
+    print("\nGenerated Response:\n", response)

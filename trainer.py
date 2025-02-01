@@ -1,6 +1,7 @@
 import os
 from sklearn.metrics import precision_recall_fscore_support
 import re
+import numpy as np
 from typing import List, Dict, Any
 from datasets import Dataset, load_dataset
 import pandas as pd
@@ -39,7 +40,7 @@ WEIGHT_ARGUMENTS = 0.3
 # --- LOAD AND PREPROCESS DATASET ---
 # df = pd.read_csv(DATASET_PATH)
 dataset = load_dataset('csv', data_files=DATASET_PATH)
-dataset = dataset['train'].select(range(1000))
+dataset = dataset['train'].select(range(100))
 # Display a sample
 print("said", dataset)
 # Add system prompt to training data
@@ -152,6 +153,8 @@ def compute_metrics(eval_pred):
     Computes weighted function accuracy and F1-score for argument matching.
     """
     predictions, references = eval_pred
+    predictions = np.argmax(predictions, axis=-1)
+    references = np.argmax(predictions, axis=-1)
     correct_func = 0
     total_funcs = len(predictions)
 
@@ -195,7 +198,7 @@ training_args = TrainingArguments(
     learning_rate=2e-4,
     logging_steps=10,
     eval_strategy="steps",
-    eval_steps=500,
+    eval_steps=30,
     save_strategy="steps",
     load_best_model_at_end=True,
     gradient_checkpointing=True,
