@@ -74,10 +74,11 @@ def tokenize_function(example):
     user_length = len(user_prompt)
     # Create labels: mask user part, keep assistant part
     labels = [-100] * user_length + tokenized[user_length:]
-    print('user_prompt', tokenized)
+    attention_mask = [1] * len(tokenized)
+    print('user_prompt', tokenized, len(tokenized), len(labels), 'attenion mask', len(attention_mask), attention_mask)
     return {
         "input_ids": tokenized,
-        "attention_mask": [1] * len(tokenized),
+        "attention_mask": attention_mask,
         "labels": labels
     }
 
