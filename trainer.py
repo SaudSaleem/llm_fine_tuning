@@ -2,7 +2,7 @@ import os
 from sklearn.metrics import precision_recall_fscore_support
 import re
 from typing import List, Dict, Any
-from datasets import Dataset
+from datasets import Dataset, load_dataset
 import pandas as pd
 from huggingface_hub import login
 from transformers import (
@@ -37,24 +37,20 @@ WEIGHT_ARGUMENTS = 0.3
 # wandb.login()
 # os.environ["WANDB_PROJECT"] = "mistral-finetune"
 # --- LOAD AND PREPROCESS DATASET ---
-df = pd.read_csv(DATASET_PATH)
+# df = pd.read_csv(DATASET_PATH)
+dataset = load_dataset('csv', data_files=DATASET_PATH)
 
+# Display a sample
+print(dataset['train'][0])
 # Add system prompt to training data
-def format_training_example(row):
-    return {
-        "messages": [
-            {"role": "user", "content": row['input']},
-            {"role": "assistant", "content": row['output']}
-        ]
-    }
+def format_training_example(example):
+    instruction = example['input']
+    response = example['output']
+    formatted_text = f"<s>[INST] {instruction} [/INST] {response}</s>"
+    return {'text': formatted_text}
 
-# Create a list of formatted examples
-formatted_df = df.apply(format_training_example, axis=1)
-# Convert the formatted dataframe into a new DataFrame with 'user' and 'assistant' columns
-formatted_df = pd.DataFrame(formatted_df.tolist())
-formatted_df = formatted_df.iloc[:1000] 
-# Then create the Dataset
-dataset = Dataset.from_pandas(formatted_df)
+formatted_dataset = dataset.map(format_training_example)
+formatted_dataset = formatted_dataset.select(range(1000))
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
@@ -69,34 +65,34 @@ model = prepare_model_for_kbit_training(model)
 
 context_length = 128
 # --- DATA TOKENIZATION ---
-def tokenize_function(example):
-    messages = example['messages']
-    # Tokenize the entire conversation
-    tokenized = tokenizer.apply_chat_template(messages, truncation=True, max_length=context_length)
-    # Tokenize user messages to find where the assistant's response starts
-    user_messages = [messages[0]]
-    user_prompt = tokenizer.apply_chat_template(user_messages, truncation=True, max_length=context_length, add_generation_prompt=True)
-    user_length = len(user_prompt)
-    # Create labels: mask user part, keep assistant part
-    labels = [-100] * user_length + tokenized[user_length:]
-    attention_mask = [1] * len(tokenized)
-    print('user_prompt', len(tokenized), len(labels), 'attenion mask', len(attention_mask))
-    return {
-        "input_ids": tokenized,
-        "attention_mask": attention_mask,
-        "labels": labels
-    }
+# def tokenize_function(example):
+#     messages = example['messages']
+#     # Tokenize the entire conversation
+#     tokenized = tokenizer.apply_chat_template(messages, truncation=True, max_length=context_length)
+#     # Tokenize user messages to find where the assistant's response starts
+#     user_messages = [messages[0]]
+#     user_prompt = tokenizer.apply_chat_template(user_messages, truncation=True, max_length=context_length, add_generation_prompt=True)
+#     user_length = len(user_prompt)
+#     # Create labels: mask user part, keep assistant part
+#     labels = [-100] * user_length + tokenized[user_length:]
+#     attention_mask = [1] * len(tokenized)
+#     print('user_prompt', len(tokenized), len(labels), 'attenion mask', len(attention_mask))
+#     return {
+#         "input_ids": tokenized,
+#         "attention_mask": attention_mask,
+#         "labels": labels
+#     }
 
+print("formatted_dataset",formatted_dataset['train'][0])
+def tokenize_function(examples):
+    return tokenizer(examples['text'], padding="max_length", truncation=True)
+
+tokenized_ds = formatted_dataset.map(tokenize_function, batched=True)
 # tokenized_ds = train_test_split.map(
 #     tokenize_function,
-#     lambda examples: tokenizer(examples["messages"], truncation=True, max_length=512),
-#     batched=True
+#     batched=False,
+#     # batch_size=64
 # )
-tokenized_ds = train_test_split.map(
-    tokenize_function,
-    batched=False,
-    # batch_size=64
-)
 tokenn = tokenized_ds["train"][0]
 # Print the raw tokenized dictionary
 print("test 123 tokenizer:", tokenn)
