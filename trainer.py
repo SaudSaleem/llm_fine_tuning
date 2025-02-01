@@ -41,8 +41,10 @@ df = pd.read_csv(DATASET_PATH)
 # Add system prompt to training data
 def format_training_example(row):
     return {
-        "user": f"[INST] input: {row['input']} [/INST]",
-        "assistant": f"{row['output']}</s>"
+        "messages": [
+            {"role": "user", "content": row['input']},
+            {"role": "assistant", "content": row['output']}
+        ]
     }
 
 # Create a list of formatted examples
@@ -59,15 +61,30 @@ tokenizer.pad_token = tokenizer.eos_token
 model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, device_map="auto",)
 model = prepare_model_for_kbit_training(model)
 
-# --- DATA TOKENIZE ---
+# --- DATA TOKENIZATION ---
 def tokenize_function(example):
-    encoded_input = tokenizer(example['user'], truncation=True)
-    encoded_output = tokenizer( example['assistant'], truncation=True)
+    messages = example['messages']
+    # Tokenize the entire conversation
+    tokenized = tokenizer.apply_chat_template(messages, truncation=True)
+    # Tokenize user messages to find where the assistant's response starts
+    user_messages = [messages[0]]
+    user_prompt = tokenizer.apply_chat_template(user_messages, truncation=True, add_generation_prompt=True)
+    user_length = len(user_prompt)
+    # Create labels: mask user part, keep assistant part
+    labels = [-100] * user_length + tokenized[user_length:]
     return {
-        "input_ids": encoded_input["input_ids"],
-        "attention_mask": encoded_input["attention_mask"],
-        "labels": encoded_output["input_ids"],
+        "input_ids": tokenized,
+        "attention_mask": [1] * len(tokenized),
+        "labels": labels
     }
+# def tokenize_function(example):
+#     encoded_input = tokenizer(example['user'], truncation=True)
+#     encoded_output = tokenizer( example['assistant'], truncation=True)
+#     return {
+#         "input_ids": encoded_input["input_ids"],
+#         "attention_mask": encoded_input["attention_mask"],
+#         "labels": encoded_output["input_ids"],
+#     }
 
 tokenized_ds = train_test_split.map(
     tokenize_function,
