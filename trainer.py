@@ -199,6 +199,7 @@ training_args = TrainingArguments(
     logging_steps=10,
     eval_strategy="steps",
     eval_steps=30,
+    save_steps=30,
     save_strategy="steps",
     load_best_model_at_end=True,
     gradient_checkpointing=True,
