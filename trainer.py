@@ -191,14 +191,14 @@ def compute_metrics(eval_pred):
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR_LOGS,
     num_train_epochs=10,
-    learning_rate=2e-5,
+    learning_rate=2e-4,
     logging_steps=10,
     eval_strategy="steps",
     eval_steps=500,
     save_strategy="steps",
     load_best_model_at_end=True,
     gradient_checkpointing=True,
-    metric_for_best_model="f1_score_args", 
+    metric_for_best_model="accuracy", 
     # report_to="wandb",  # Enable wandb logging
     # run_name="mistral-finetune-run",  # Custom run name
 )
