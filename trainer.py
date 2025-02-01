@@ -83,10 +83,18 @@ def tokenize_function(example):
         "labels": labels
     }
 
-tokenized_ds = train_test_split.map(
-    lambda examples: tokenizer(examples["messages"], truncation=True, max_length=512),
-    batched=True
-)
+tokenized_ds = tokenizer.apply_chat_template(train_test_split, return_tensors="pt")
+model_inputs = tokenized_ds.to('cuda')
+model.to('cuda')
+
+generated_ids = model.generate(model_inputs, max_new_tokens=1000, do_sample=True)
+decoded = tokenizer.batch_decode(generated_ids)
+print(decoded[0])
+# tokenized_ds = train_test_split.map(
+#     tokenize_function,
+#     lambda examples: tokenizer(examples["messages"], truncation=True, max_length=512),
+#     batched=True
+# )
 # tokenized_ds = train_test_split.map(
 #     tokenize_function,
 #     batched=False,
