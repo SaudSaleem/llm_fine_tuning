@@ -75,7 +75,7 @@ tokenized_ds = train_test_split.map(
     batch_size=64
 )
 tokenn = tokenized_ds["train"][0]
-print("test tokenzier", tokenn)
+print("test 123 tokenzier", tokenn)
 decoded_text = tokenizer.decode(tokenn.input_ids)
 print(decoded_text)
 label_text = tokenizer.decode(tokenn.labels)
