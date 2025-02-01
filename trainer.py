@@ -87,7 +87,7 @@ print("formatted_dataset",formatted_dataset['train'][0])
 def tokenize_function(examples):
     return tokenizer(examples['text'], padding="max_length", truncation=True)
 
-tokenized_ds = formatted_dataset.map(tokenize_function, batched=True)
+tokenized_ds = train_test_split.map(tokenize_function, batched=True)
 # tokenized_ds = train_test_split.map(
 #     tokenize_function,
 #     batched=False,
