@@ -62,15 +62,17 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, device_map="auto",)
 model = prepare_model_for_kbit_training(model)
 
+context_length = 128
 # --- DATA TOKENIZATION ---
 def tokenize_function(example):
     messages = example['messages']
     # Tokenize the entire conversation
-    tokenized = tokenizer.apply_chat_template(messages, truncation=True)
+    tokenized = tokenizer.apply_chat_template(messages, truncation=True, max_length=context_length)
     # Tokenize user messages to find where the assistant's response starts
     user_messages = [messages[0]]
-    user_prompt = tokenizer.apply_chat_template(user_messages, truncation=True, add_generation_prompt=True)
-    print('saud', len(user_prompt), len(user_prompt['input_ids']), user_prompt)
+    user_prompt = tokenizer.apply_chat_template(user_messages, truncation=True, max_length=context_length, add_generation_prompt=True)
+    print('user_prompt', user_prompt)
+    print('saud', len(user_prompt), len(user_prompt['input_ids']))
     user_length = len(user_prompt)
     # Create labels: mask user part, keep assistant part
     labels = [-100] * user_length + tokenized[user_length:]
