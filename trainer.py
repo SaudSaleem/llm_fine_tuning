@@ -83,12 +83,15 @@ def tokenize_function(example):
         "labels": labels
     }
 
-
 tokenized_ds = train_test_split.map(
-    tokenize_function,
-    batched=False,
-    # batch_size=64
+    lambda examples: tokenizer(examples["messages"], truncation=True, max_length=512),
+    batched=True
 )
+# tokenized_ds = train_test_split.map(
+#     tokenize_function,
+#     batched=False,
+#     # batch_size=64
+# )
 tokenn = tokenized_ds["train"][0]
 # Print the raw tokenized dictionary
 print("test 123 tokenizer:", tokenn)
