@@ -75,11 +75,16 @@ tokenized_ds = train_test_split.map(
     batch_size=64
 )
 tokenn = tokenized_ds["train"][0]
-print("test 123 tokenzier", tokenn)
-decoded_text = tokenizer.decode(tokenn.input_ids)
-print(decoded_text)
-label_text = tokenizer.decode(tokenn.labels)
-print("label",decoded_text)
+# Print the raw tokenized dictionary
+print("test 123 tokenizer:", tokenn)
+
+# Decode input tokens
+decoded_text = tokenizer.decode(tokenn["input_ids"])
+print("Decoded Input:", decoded_text)
+
+# Decode label tokens
+label_text = tokenizer.decode(tokenn["labels"])
+print("Decoded Label:", label_text)  # ✅ Fix: Correct variable
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 # --- LORA CONFIG ---
 def print_trainable_parameters(model):
