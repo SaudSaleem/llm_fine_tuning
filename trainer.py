@@ -24,7 +24,7 @@ from peft import (
 
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
-DATASET_PATH = "bitAgent1.csv"
+DATASET_PATH = "bitAgent.csv"
 OUTPUT_DIR_LOGS = "/home/user/saud/models/logs"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
@@ -39,7 +39,7 @@ WEIGHT_ARGUMENTS = 0.3
 # --- LOAD AND PREPROCESS DATASET ---
 # df = pd.read_csv(DATASET_PATH)
 dataset = load_dataset('csv', data_files=DATASET_PATH)
-dataset = dataset['train'].select(range(40))
+dataset = dataset['train'].select(range(1000))
 # Display a sample
 print("said", dataset)
 # Add system prompt to training data
@@ -195,7 +195,7 @@ training_args = TrainingArguments(
     learning_rate=2e-4,
     logging_steps=10,
     eval_strategy="steps",
-    eval_steps=30,
+    eval_steps=500,
     save_strategy="steps",
     load_best_model_at_end=True,
     gradient_checkpointing=True,
