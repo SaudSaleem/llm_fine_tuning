@@ -24,7 +24,7 @@ from peft import (
 
 # --- CONFIGURATION ---
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
-DATASET_PATH = "bitAgent.csv"
+DATASET_PATH = "bitAgent1.csv"
 OUTPUT_DIR_LOGS = "/home/user/saud/models/logs"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
@@ -50,7 +50,7 @@ def format_training_example(example):
     return {'text': formatted_text}
 
 formatted_dataset = dataset.map(format_training_example)
-formatted_dataset = formatted_dataset.select(range(1000))
+# formatted_dataset = formatted_dataset.select(range(1000))
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
