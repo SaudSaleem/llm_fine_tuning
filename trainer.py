@@ -1,17 +1,16 @@
 import os
-import wandb
+from sklearn.metrics import precision_recall_fscore_support
+import re
 from typing import List, Dict, Any
 from datasets import Dataset
-from evaluate import load
 import pandas as pd
-import numpy as np
 from huggingface_hub import login
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
     TrainingArguments,
     Trainer,
-    DataCollatorForLanguageModeling,
+    DataCollatorWithPadding,
     EvalPrediction,
     AutoConfig
 )
@@ -28,7 +27,9 @@ DATASET_PATH = "bitAgent.csv"
 OUTPUT_DIR_LOGS = "/home/user/saud/models/logs"
 OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
 HF_TOKEN = os.getenv("HF_TOKEN")
-
+# Adjust these weights based on importance
+WEIGHT_FUNCTION = 0.7
+WEIGHT_ARGUMENTS = 0.3
 
 # --- LOGIN TO HUGGINGFACE ---
 # login(token=HF_TOKEN)
@@ -39,8 +40,6 @@ df = pd.read_csv(DATASET_PATH)
 
 # Add system prompt to training data
 def format_training_example(row):
-    
-    
     return {
         "user": f"[INST] input: {row['input']} [/INST]",
         "assistant": f"{row['output']}</s>"
@@ -48,65 +47,34 @@ def format_training_example(row):
 
 # Create a list of formatted examples
 formatted_df = df.apply(format_training_example, axis=1)
-
 # Convert the formatted dataframe into a new DataFrame with 'user' and 'assistant' columns
 formatted_df = pd.DataFrame(formatted_df.tolist())
-
+formatted_df = formatted_df.iloc[:1000] 
 # Then create the Dataset
 dataset = Dataset.from_pandas(formatted_df)
 train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
 
-tokenizer = AutoTokenizer.from_pretrained(
-    MODEL_NAME,
-    padding_side="left",
-    add_eos_token=True,
-    add_bos_token=True,
-)
-tokenizer.pad_token = tokenizer.eos_token
-
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_NAME,
-    device_map="auto",
-)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, device_map="auto",)
 model = prepare_model_for_kbit_training(model)
 
-# --- DATA PROCESSING ---
-def preprocess_function(examples):
-    # Tokenize user and assistant together with special tokens
-    combined_texts = [user + assistant for user, assistant in zip(examples["user"], examples["assistant"])]
-    tokenized = tokenizer(
-        combined_texts,
-        max_length=768,
-        truncation=True,
-        padding="max_length",
-        add_special_tokens=True  # Ensures BOS/EOS are added
-    )
-    
-    # Tokenize user alone to find actual length in combined tokens
-    user_tokenized = tokenizer(examples["user"], add_special_tokens=False)
-    user_lengths = [len(ids) for ids in user_tokenized["input_ids"]]
-    
-    # Account for BOS token added at start of combined text
-    user_lengths = [len(tokenizer.encode(user, add_special_tokens=True)) - 1 for user in examples["user"]]
-    
-    # Create labels by masking user part (including BOS)
-    labels = []
-    for input_ids, user_len in zip(tokenized["input_ids"], user_lengths):
-        label = [-100] * user_len + input_ids[user_len:]
-        labels.append(label)
-    
+# --- DATA TOKENIZE ---
+def tokenize_function(example):
+    encoded_input = tokenizer(example['user'], truncation=True)
+    encoded_output = tokenizer( example['assistant'], truncation=True)
     return {
-        "input_ids": tokenized["input_ids"],
-        "attention_mask": tokenized["attention_mask"],
-        "labels": labels,
+        "input_ids": encoded_input["input_ids"],
+        "attention_mask": encoded_input["attention_mask"],
+        "labels": encoded_output["input_ids"],
     }
 
 tokenized_ds = train_test_split.map(
-    preprocess_function,
+    tokenize_function,
     batched=True,
     batch_size=64
 )
-
+print("test tokenzier", tokenized_ds["train"][0])
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 # --- LORA CONFIG ---
 def print_trainable_parameters(model):
     trainable_params = 0
@@ -133,28 +101,6 @@ peft_config = LoraConfig(
 model = get_peft_model(model, peft_config)
 model.enable_input_require_grads()
 print_trainable_parameters(model)
-# --- TRAINING ARGS ---
-training_args = TrainingArguments(
-    output_dir=OUTPUT_DIR_LOGS,
-    per_device_train_batch_size=2,
-    gradient_accumulation_steps=8,
-    num_train_epochs=10,
-    learning_rate=2e-5,
-    optim="paged_adamw_32bit",
-    logging_steps=10,
-    eval_strategy="steps",
-    eval_steps=500,
-    save_strategy="steps",
-    load_best_model_at_end=True,
-    # save_total_limit=1,
-    metric_for_best_model="accuracy", 
-    bf16=True,
-    max_grad_norm=0.3,
-    gradient_checkpointing=True,
-    # report_to="wandb",  # Enable wandb logging
-    # run_name="mistral-finetune-run",  # Custom run name
-
-)
 
 def extract_top_function_names(text: str) -> list:
     """Simplified extractor for standardized format"""
@@ -163,46 +109,80 @@ def extract_top_function_names(text: str) -> list:
     functions = re.findall(r'"name"\s*:\s*"([^"]+)"', text)
     return list(set(functions))
 
+def extract_function_parts(call):
+    """ Extract function name and arguments from function call string """
+    print('extract_function_parts', call)
+    match = re.match(r'(\w+)\((.*?)\)', call)
+    if match:
+        func_name = match.group(1)
+        args = match.group(2).split(",") if match.group(2) else []
+        args = [arg.strip().strip('"') for arg in args]  # Remove spaces and quotes
+        return func_name, args
+    return call, []  # Return original if format is incorrect
 
-def compute_metrics(eval_pred: EvalPrediction):
-    predictions, labels = eval_pred
-    predictions = np.argmax(predictions, axis=-1)
-    
-    # Replace -100 in labels with pad_token_id
-    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
-    
-    # Decode predictions and labels
-    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=False)
-    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-    # print('total', "DECODED PREDICTIONS",decoded_preds, "ACTUAL LABELS", decoded_labels)
-    # Extract assistant's response from predictions (split after [/INST])
-    assistant_preds = []
-    for pred in decoded_preds:
-        # Split on the last occurrence of [/INST]
-        if "[/INST]" in pred:
-            assistant_part = pred.split("[/INST]")[-1].strip()
-        else:
-            assistant_part = pred  # Fallback if delimiter missing
-        assistant_preds.append(assistant_part)
-    print('assistant_preds hello', assistant_preds)
-    # Calculate accuracy based on function names
-    correct = 0
-    total = len(decoded_labels)
-    for pred, label in zip(assistant_preds, decoded_labels):
-        pred_funcs = extract_top_function_names(pred)
-        label_funcs = extract_top_function_names(label)
-        if set(pred_funcs) == set(label_funcs):
-            correct += 1
-        print('pred_funcs', pred_funcs, 'label_funcs', label_funcs, correct, set(pred_funcs), set(label_funcs))
-    print('accuracy', 'correct', correct, 'total', total)
-    return {"accuracy": correct / total if total > 0 else 0}
+def compute_metrics(eval_pred):
+    """
+    Computes weighted function accuracy and F1-score for argument matching.
+    """
+    predictions, references = eval_pred
+    correct_func = 0
+    total_funcs = len(predictions)
+
+    all_preds, all_refs = [], []
+
+    for pred, ref in zip(predictions, references):
+        pred_func, pred_args = extract_function_parts(pred)
+        ref_func, ref_args = extract_function_parts(ref)
+        print('compute_metrics', pred_func, pred_args, 'label', ref_func, ref_args)
+        # Check if function names match
+        if pred_func == ref_func:
+            correct_func += 1
+
+        # Collect arguments for F1 calculation
+        all_preds.extend(pred_args)
+        all_refs.extend(ref_args)
+
+    # Compute function accuracy
+    function_accuracy = correct_func / total_funcs
+
+    # Compute Precision, Recall, and F1-score at the argument level
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        all_refs, all_preds, average='micro', zero_division=1
+    )
+
+    # Compute weighted final score
+    final_score = (WEIGHT_FUNCTION * function_accuracy) + (WEIGHT_ARGUMENTS * f1)
+    result = {
+        "function_accuracy": function_accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1_score_args": f1,
+        "final_weighted_score": final_score
+    }
+    print('accuracy result', result)
+    return result
+# --- TRAINING ARGS ---
+training_args = TrainingArguments(
+    output_dir=OUTPUT_DIR_LOGS,
+    num_train_epochs=10,
+    learning_rate=2e-5,
+    logging_steps=10,
+    eval_strategy="steps",
+    eval_steps=500,
+    save_strategy="steps",
+    load_best_model_at_end=True,
+    gradient_checkpointing=True,
+    metric_for_best_model="f1_score_args", 
+    # report_to="wandb",  # Enable wandb logging
+    # run_name="mistral-finetune-run",  # Custom run name
+)
 # --- TRAINER ---
 trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=tokenized_ds["train"],
     eval_dataset=tokenized_ds["test"],
-    data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+    data_collator=data_collator,
     compute_metrics=compute_metrics,
 )
 
