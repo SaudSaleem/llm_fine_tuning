@@ -51,8 +51,8 @@ def format_training_example(example):
 
 formatted_dataset = dataset.map(format_training_example)
 # formatted_dataset = formatted_dataset.select(range(1000))
-train_test_split = dataset.train_test_split(test_size=0.15, seed=42)
-
+train_test_split = formatted_dataset['train'].train_test_split(test_size=0.15, seed=42)
+print('train_test_split', train_test_split, train_test_split['train'][0])
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 tokenizer.padding_side = 'right'
 tokenizer.pad_token = tokenizer.eos_token
