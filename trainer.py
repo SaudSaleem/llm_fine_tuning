@@ -41,7 +41,7 @@ WEIGHT_ARGUMENTS = 0.3
 dataset = load_dataset('csv', data_files=DATASET_PATH)
 
 # Display a sample
-print(dataset['train'][0])
+print(dataset['train'][0], dataset)
 # Add system prompt to training data
 def format_training_example(example):
     instruction = example['input']
