@@ -101,10 +101,6 @@ print("test 123 tokenizer:", tokenn)
 decoded_text = tokenizer.decode(tokenn["input_ids"])
 print("Decoded Input:", decoded_text)
 
-# Decode label tokens, filtering out -100 values first
-filtered_labels = [label for label in tokenn["labels"] if label != -100]
-label_text = tokenizer.decode(filtered_labels, skip_special_tokens=True)
-print("Decoded Labels:", label_text)
 # --- LORA CONFIG ---
 def print_trainable_parameters(model):
     trainable_params = 0
