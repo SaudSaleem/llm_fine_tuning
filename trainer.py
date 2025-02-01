@@ -147,6 +147,7 @@ def extract_function_parts(call):
     return call, []  # Return original if format is incorrect
 
 def compute_metrics(eval_pred):
+    print('compute_metrics called')
     """
     Computes weighted function accuracy and F1-score for argument matching.
     """
