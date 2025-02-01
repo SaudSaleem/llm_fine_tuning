@@ -83,7 +83,7 @@ context_length = 128
 #         "labels": labels
 #     }
 
-print("formatted_dataset",formatted_dataset['train'][0])
+print("formatted_dataset",formatted_dataset[0])
 def tokenize_function(examples):
     return tokenizer(examples['text'], padding="max_length", truncation=True)
 
