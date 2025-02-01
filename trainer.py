@@ -77,14 +77,7 @@ def tokenize_function(example):
         "attention_mask": [1] * len(tokenized),
         "labels": labels
     }
-# def tokenize_function(example):
-#     encoded_input = tokenizer(example['user'], truncation=True)
-#     encoded_output = tokenizer( example['assistant'], truncation=True)
-#     return {
-#         "input_ids": encoded_input["input_ids"],
-#         "attention_mask": encoded_input["attention_mask"],
-#         "labels": encoded_output["input_ids"],
-#     }
+
 
 tokenized_ds = train_test_split.map(
     tokenize_function,
@@ -100,8 +93,8 @@ decoded_text = tokenizer.decode(tokenn["input_ids"])
 print("Decoded Input:", decoded_text)
 
 # Decode label tokens
-label_text = tokenizer.decode(tokenn["labels"])
-print("Decoded Label:", label_text)  # ✅ Fix: Correct variable
+label_text = tokenizer.decode(tokenn["labels"], skip_special_tokens=True)
+print("Decoded Labels:", label_text)
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 # --- LORA CONFIG ---
 def print_trainable_parameters(model):
