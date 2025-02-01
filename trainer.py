@@ -71,8 +71,8 @@ def tokenize_function(example):
 
 tokenized_ds = train_test_split.map(
     tokenize_function,
-    batched=True,
-    batch_size=64
+    batched=False,
+    # batch_size=64
 )
 tokenn = tokenized_ds["train"][0]
 # Print the raw tokenized dictionary
