@@ -71,11 +71,10 @@ def tokenize_function(example):
     # Tokenize user messages to find where the assistant's response starts
     user_messages = [messages[0]]
     user_prompt = tokenizer.apply_chat_template(user_messages, truncation=True, max_length=context_length, add_generation_prompt=True)
-    print('user_prompt', user_prompt)
-    print('saud', len(user_prompt), len(user_prompt['input_ids']))
     user_length = len(user_prompt)
     # Create labels: mask user part, keep assistant part
     labels = [-100] * user_length + tokenized[user_length:]
+    print('user_prompt', tokenized)
     return {
         "input_ids": tokenized,
         "attention_mask": [1] * len(tokenized),
