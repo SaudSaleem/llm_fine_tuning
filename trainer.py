@@ -195,11 +195,11 @@ training_args = TrainingArguments(
     learning_rate=2e-4,
     logging_steps=10,
     eval_strategy="steps",
-    eval_steps=500,
+    eval_steps=30,
     save_strategy="steps",
     load_best_model_at_end=True,
     gradient_checkpointing=True,
-    metric_for_best_model="accuracy", 
+    metric_for_best_model="f1_score_args", 
     # report_to="wandb",  # Enable wandb logging
     # run_name="mistral-finetune-run",  # Custom run name
 )
