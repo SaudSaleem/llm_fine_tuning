@@ -142,6 +142,8 @@ processed_df = pd.DataFrame(processed_data)
 processed_df.to_csv(
     os.path.join(data_folder, output_file),
     index=False,
+    escapechar='\\',
+    encoding='utf-8',
     quoting=2  # Quote all non-numeric values
 )
 
