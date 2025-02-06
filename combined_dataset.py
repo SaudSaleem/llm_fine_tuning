@@ -28,7 +28,7 @@ except Exception as e:
 
 # Define paths
 data_folder = "data-preprocessing/bitagent.data/samples"
-output_file = "combined_dataset.csv"
+output_file = "bitAgent.csv"
 files_to_merge = [
     "glaive_function.csv",
     "bfcl_function.csv",
@@ -67,7 +67,7 @@ if datasets:
     
     # Save combined dataset
     combined_df.to_csv(
-        os.path.join(data_folder, output_file),
+        output_file,
         index=False,
         quoting=2,
         escapechar='\\',

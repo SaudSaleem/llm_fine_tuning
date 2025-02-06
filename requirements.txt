@@ -1,14 +1,14 @@
+torch
 python-dotenv
 transformers
 peft
 datasets
 pandas
-torch
 wandb
 tokenizers
 numpy
 evaluate
-torch
-autoawq
+# autoawq
 bitsandbytes
 scikit-learn
+huggingface_hub

@@ -1,3 +1,11 @@
 # .gitignore
 .env
+bitagent.data/
 *.csv
+# Ignore virtual environments  
+venv/  
+# Ignore Python bytecode  
+__pycache__/  
+# Ignore all installed packages (if using a virtual environment)  
+*.egg-info/  
+pip-wheel-metadata/ 
