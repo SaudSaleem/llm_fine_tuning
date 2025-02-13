@@ -1,151 +1,99 @@
-# import pandas as pd
-# import os
-# from ast import literal_eval
-
-# # Define paths
-# data_folder = "bitagent.data/samples"
-# input_file = "bfcl_sample.csv"
-# output_file = "bfcl_processed.csv"
-
-# # Load the dataset
-# bfcl = pd.read_csv(os.path.join(data_folder, input_file))
-
-# # Process each row to extract input and output
-# processed_data = []
-# for index, row in bfcl.iterrows():
-#     try:
-#         # Parse question and function columns
-#         question_messages = literal_eval(row['question'])
-#         function_data = literal_eval(row['ground_truth'])
-        
-#         # Extract user messages
-#         user_content = []
-#         for message_group in question_messages:
-#             for msg in message_group:
-#                 if msg['role'] == 'user':
-#                     user_content.append(msg['content'])
-        
-#         # Create input-output pairs
-#         processed_data.append({
-#             'input': '\n'.join(user_content),
-#             'output': str(function_data)  # Keep as string representation
-#         })
-        
-#     except Exception as e:
-#         print(f"Error processing row {index}: {str(e)}")
-#         continue
-
-# # Convert to DataFrame and save as CSV
-# processed_df = pd.DataFrame(processed_data)
-# processed_df.to_csv(
-#     os.path.join(data_folder, output_file),
-#     index=False,
-#     quoting=2  # Quote all non-numeric values
-# )
-
-# print(f"Processed {len(processed_df)}/{len(bfcl)} rows successfully")
-# print(f"CSV output saved to: {os.path.join(data_folder, output_file)}")
-
-
-
 import pandas as pd
-import os
-from ast import literal_eval
+import ast
+import json
 
-# Define paths
-data_folder = "data-preprocessing/bitagent.data/samples"
-input_file = "bfcl_sample.csv"
-output_file = "bfcl_processed.csv"
+# Read the original CSV
+df = pd.read_csv('data-preprocessing/bitagent.data/samples/bfcl_sample.csv')
 
-# Load the dataset
-bfcl = pd.read_csv(os.path.join(data_folder, input_file))
+types_dict = {
+    'str': "string",
+    'int': "integer",
+    'float': "number",
+    'bool': "boolean",
+    'list': "array",
+    'dict': "object",
+}
+def modify_tools(tools):
+  tool = tools[0]
+  # print('tool', tool)
+  obj = {}
+  obj['type'] = "function"
+  obj['function'] = {}
+  obj['function']['name'] = tool['name']
+  obj['function']['description'] = tool['description']
+  obj['function']['parameters'] = {}
+  obj['function']['parameters']['type'] = "object"
+  obj['function']['parameters']['properties'] = {}
+  obj['function']['parameters']['required'] = []
+  for key, value in tool['arguments'].items():
+    obj['function']['parameters']['properties'][key] = {}
+    obj['function']['parameters']['properties'][key]['type'] = types_dict.get(value['type'], value['type'])
+    obj['function']['parameters']['properties'][key]['description'] = value['description']
+    if value['required'] == True:
+      obj['function']['parameters']['required'].append(key)
+  obj['function']['strict'] = True
+  return [obj]
 
-def transform_function_data(function_data, index):
-    """
-    Convert function data to structured format with 'name' and 'parameters'.
-    """
-    try:
-        parsed_data = literal_eval(function_data)  # Convert string to Python object
-        if not isinstance(parsed_data, list) or len(parsed_data) == 0:
-            print(f"⚠️ Skipping row {index}: function_data is not a list → {function_data}")
-            return None
-        
-        func_dict = parsed_data[0]  # Extract first function dictionary
-        if not isinstance(func_dict, dict):
-            print(f"⚠️ Skipping row {index}: function_data[0] is not a dictionary → {func_dict}")
-            return None
-        
-        func_name = list(func_dict.keys())[0]  # Extract function name
-        params = func_dict[func_name]  # Extract parameters
-        
-        if not isinstance(params, dict):
-            print(f"⚠️ Skipping row {index}: Parameters are not a dictionary → {params}")
-            return None
+def process_row(row):
+    # Parse the nested question structure
+    raw_question = ast.literal_eval(row['question'])[0]
+    conversation = raw_question  # Extract inner list of user messages
 
-        # Convert parameters into structured format
-        structured_params = {
-            "type": "object",
-            "properties": {},
-            # "required": list(params.keys())  # Set required parameters
-        }
+    # Parse ground truth to get function details
+    ground_truth = ast.literal_eval(row['ground_truth'])
+    func_name = list(ground_truth[0].keys())[0]
+    func_args = ground_truth[0][func_name]
 
-        for key, value in params.items():
-            if not isinstance(value, list) or len(value) == 0:
-                print(f"⚠️ Skipping row {index}: Invalid parameter format → {key}: {value}")
-                return None
-            
-            structured_params["properties"][key] = {
-                "type": "number" if isinstance(value[0], (int, float)) else "string",
-                "description": f"Parameter for {key}"
-            }
-        
-        return {
-            "name": func_name,
-            "parameters": structured_params
-        }
-    
-    except Exception as e:
-        print(f"⚠️ Error processing function_data at index {index}: {function_data} → {str(e)}")
-        return None
+    # Format function arguments with proper string handling
+    formatted_args = []
+    for arg_name, arg_value in func_args.items():
+        if isinstance(arg_value, list):
+            # Handle list arguments with proper string elements
+            items = [f"'{item}'" if isinstance(item, str) else str(item)
+                    for item in arg_value]
+            formatted_args.append(f"{arg_name}=[{', '.join(items)}]")
+        else:
+            # Handle scalar values
+            if isinstance(arg_value, str):
+                formatted_args.append(f"{arg_name}='{arg_value}'")
+            else:
+                formatted_args.append(f"{arg_name}={arg_value}")
 
-# Process each row to extract input and output
-processed_data = []
-for index, row in bfcl.iterrows():
-    try:
-        # Parse question and function columns
-        question_messages = literal_eval(row['question'])
-        function_data = row['ground_truth']
+    # Create assistant response
+    assistant_response = {
+        "role": "assistant",
+        "content": f"{func_name}({', '.join(formatted_args)})"
+    }
+    if isinstance(conversation, dict):
+      conversation = [conversation]
+    # Process tools specification
+    tools = ast.literal_eval(row['function'])
+    for tool in tools:
+        if 'parameters' in tool:
+            params = tool.pop('parameters')
+            arguments = {}
+            required_params = params.get('required', [])
 
-        # Extract user messages
-        user_content = []
-        for message_group in question_messages:
-            for msg in message_group:
-                if isinstance(msg, dict) and msg.get('role') == 'user':
-                    user_content.append(msg.get('content', ''))
+            # Convert parameters to arguments format
+            for param_name, param_details in params.get('properties', {}).items():
+                arguments[param_name] = {
+                    "type": param_details.get('type', ''),
+                    "description": param_details.get('description', ''),
+                    "required": param_name in required_params
+                }
+            tool['arguments'] = arguments
+    return {
+        "conversation": conversation,
+        "tools": modify_tools(tools)
+    }
 
-        # Transform function data
-        structured_output = transform_function_data(function_data, index)
+# Process all rows
+processed_data = [process_row(row) for _, row in df.iterrows()]
 
-        # Create input-output pairs
-        if structured_output:
-            processed_data.append({
-                'input': '\n'.join(user_content),
-                'output': str(structured_output)  # Convert dict to string for CSV
-            })
+# Create new DataFrame with proper JSON formatting
+new_df = pd.DataFrame(processed_data)
+new_df['conversation'] = new_df['conversation'].apply(json.dumps)
+new_df['tools'] = new_df['tools'].apply(json.dumps)
 
-    except Exception as e:
-        print(f"⚠️ Error processing row {index}: {str(e)}")
-        continue
-
-# Convert to DataFrame and save as CSV
-processed_df = pd.DataFrame(processed_data)
-processed_df.to_csv(
-    os.path.join(data_folder, output_file),
-    index=False,
-    escapechar='\\',
-    encoding='utf-8',
-    quoting=2  # Quote all non-numeric values
-)
-
-print(f"Processed {len(processed_df)}/{len(bfcl)} rows successfully")
-print(f"CSV output saved to: {os.path.join(data_folder, output_file)}")
+# Save to new CSV without index
+new_df.to_csv('data-preprocessing/bitagent.data/samples/bfcl_modified.csv', index=False)

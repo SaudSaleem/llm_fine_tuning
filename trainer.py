@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from sklearn.metrics import precision_recall_fscore_support
 import re
 import numpy as np
@@ -27,7 +28,7 @@ from peft import (
 MODEL_NAME = "TheBloke/Mistral-7B-Instruct-v0.2-AWQ"
 DATASET_PATH = "bitAgent.csv"
 OUTPUT_DIR_LOGS = "/home/user/saud/models/logs"
-OUTPUT_DIR = "/home/user/saud/models/fine-tuned-mistral-bitagent-latest"
+OUTPUT_DIR = Path.home() / "models" / "fine-tuned-mistral-bitagent"
 HF_TOKEN = os.getenv("HF_TOKEN")
 # Adjust these weights based on importance
 WEIGHT_FUNCTION = 0.7

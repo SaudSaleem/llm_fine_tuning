@@ -1,0 +1,12 @@
+# .gitignore
+.env
+data/
+wandb/
+*.csv
+# Ignore virtual environments  
+autotrain/  
+# Ignore Python bytecode  
+__pycache__/  
+# Ignore all installed packages (if using a virtual environment)  
+*.egg-info/  
+pip-wheel-metadata/ 

@@ -1,0 +1,5 @@
+python-dotenv
+datasets
+wandb
+huggingface_hub
+autotrain-advanced
