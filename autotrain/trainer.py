@@ -11,29 +11,12 @@ HF_USERNAME = os.getenv('HF_USERNAME')
 WANDB_TOKEN = os.getenv('WANDB_TOKEN')
 # Configuration
 MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.3"
-DATA_PATH = "data/subset_dataset"
+DATA_PATH = "data/csv/"
 
 login(token=HF_TOKEN)
 wandb.login(key=WANDB_TOKEN)
 wandb.init(project="bitagent-finetune-mistral-autotrain", mode="online")
 
-# EXTRACT 40K CHUNKS
-from datasets import load_dataset, DatasetDict, load_from_disk
-dataset = load_dataset("saudsaleem/mistral-7b-instruct-templated-dataset")
-# Randomly sample 40k rows
-random_indices = dataset["train"].shuffle(seed=42).select(range(40000))
-# Split into train (80%) and test (20%) sets
-train_test_split = random_indices.train_test_split(test_size=0.2, seed=42)
-subset_dataset = DatasetDict({
-    "train": train_test_split["train"],
-    "test": train_test_split["test"]
-})
-subset_dataset.save_to_disk(DATA_PATH)
-
-dataset = load_from_disk(DATA_PATH)
-print(dataset)
-print(dataset["train"][0])  # Try accessing a sample
-# END CODE
 
 training_params = LLMTrainingParams(
     model=MODEL_NAME,
@@ -43,8 +26,8 @@ training_params = LLMTrainingParams(
     trainer="sft",
     epochs=6,
     lr=2e-5,
-    batch_size=4,
-    gradient_accumulation=8,
+    batch_size=20,
+    gradient_accumulation=2,
     optimizer="adamw_torch",
     scheduler="cosine",
     peft=True,
