@@ -74,6 +74,7 @@ def sample_and_save_datasets(output_dir="data-preprocessing/bitagent.data/sample
     try:
         glaive_ds = huggingface_loader("glaiveai/glaive-function-calling-v2")
         glaive_df = pd.DataFrame(glaive_ds)
+        # glaive_sample = glaive_df.sample(n=min(1000, len(glaive_df)))
         glaive_sample = glaive_df.sample(frac=1)
         glaive_sample.to_csv(f"{output_dir}/glaive_sample.csv", index=False)
         logger.info(f"Saved Glaive sample to {output_dir}/glaive_sample.csv")
@@ -89,8 +90,9 @@ def sample_and_save_datasets(output_dir="data-preprocessing/bitagent.data/sample
         logger.error(f"Error processing BFCL dataset: {str(e)}")
 
     try:
-        bitagent_ds = huggingface_loader("BitAgent/tool_calling")
+        bitagent_ds = huggingface_loader("BitAgent/tool_calling_shuffle")
         bitagent_df = pd.DataFrame(bitagent_ds)
+        # bitagent_sample = bitagent_df.sample(n=min(1000, len(bitagent_df)))
         bitagent_sample = bitagent_df.sample(frac=1)
         bitagent_sample.to_csv(f"{output_dir}/bitagent_sample.csv", index=False)
         logger.info(f"Saved BitAgent sample to {output_dir}/bitagent_sample.csv")

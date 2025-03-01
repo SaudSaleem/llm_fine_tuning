@@ -1,9 +1,14 @@
 import json
 import pandas as pd
 from ast import literal_eval
+import datasets
+import random
+# Load dataset from Hugging Face
+# dataset = datasets.load_dataset("BitAgent/tool_shuffle_small", split="train")
+# df = pd.DataFrame(dataset)
+# df.to_csv('bitagent_shuffel.csv', index=False)
 
-# Load the CSV file
-df = pd.read_csv('data-preprocessing/bitagent.data/samples/bitagent_sample.csv')
+df = pd.read_csv('bitagent_shuffel.csv')
 
 def format_arguments(arguments):
     """Formats function arguments into a string suitable for a function call."""
@@ -61,5 +66,40 @@ for index, row in df.iterrows():
     # Convert the conversation back to a JSON string
     df.at[index, 'conversation'] = json.dumps(conversation)
 
+
+# df.to_csv('bitagent_shuffel_processed.csv', index=False)
+# # ADD EXTRAB TOOLS IN TOOLS COLUMNS
+# _df = pd.read_csv('bitagent_shuffel_processed.csv')
+# Collect all tools from all rows
+all_tools = []
+for tools_str in df['tools']:
+    # print('tools_str', tools_str)
+    tools = json.loads(tools_str)
+    all_tools.extend(tools)
+
+errored_rows = 0
+# Update tools column with JSON-safe formatting
+def update_tools(tools_str):
+  try:
+      global errored_rows
+      selected_tool = random.choice(all_tools)
+      tools_list = json.loads(tools_str)
+      # Determine the number of tools to add (2-6)
+      num_tools_to_add = random.randint(2, 6)
+      for _ in range(num_tools_to_add):
+        selected_tool = random.choice(all_tools)
+        # Randomly choose to append or prepend each tool
+        if random.choice([True, False]):
+            tools_list.append(selected_tool)
+        else:
+            tools_list.insert(0, selected_tool)
+      return json.dumps(tools_list)
+  except Exception as e:
+        errored_rows += 1
+        print(f"Unexpected error: {e}", tools_str)
+        return tools_str
+
+df['tools'] = df['tools'].apply(update_tools)
+
 # Save the modified DataFrame
-df.to_csv('data-preprocessing/bitagent.data/samples/bitagent_modified.csv', index=False)
+df.to_csv('bitagent_shuffel_processed.csv', index=False)

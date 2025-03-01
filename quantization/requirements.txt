@@ -1,0 +1,6 @@
+auto-gptq 
+optimum 
+transformers 
+accelerate
+huggingface_hub
+python-dotenv

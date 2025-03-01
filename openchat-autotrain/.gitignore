@@ -1,10 +1,10 @@
 # .gitignore
 .env
-bitagent.data/
+data/
+wandb/
 *.csv
-wallet/
 # Ignore virtual environments  
-venv/  
+openchat/  
 # Ignore Python bytecode  
 __pycache__/  
 # Ignore all installed packages (if using a virtual environment)  

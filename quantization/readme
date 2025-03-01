@@ -1,0 +1,4 @@
+python -m venv quantization
+source quantization/bin/activate
+pip install -r requirements.txt
+python quantization.py
