@@ -5,7 +5,7 @@ DATA_PATH = "data/subset_dataset"
 CSV_DATA_PATH = "data/csv"
 dataset = load_dataset("saudsaleem/mistral-7b-instruct-templated-dataset")
 
-random_indices = dataset["train"].shuffle(seed=42).select(range(1200))
+random_indices = dataset["train"].shuffle(seed=42).select(range(3000))
 # Split into train (80%) and test (20%) sets
 train_test_split = random_indices.train_test_split(test_size=0.2, seed=42)
 subset_dataset = DatasetDict({

@@ -11,11 +11,17 @@ def bad_message(msg: str) -> str:
 def received_reward_template(reward: float, max_reward: float) -> str:
     return f"\nReward: {reward}/{max_reward}"
 
-
+def clean_response(response: str) -> str:
+    # Clean the response similar to how BitAgent does it
+    response = response.strip()
+    if response and response[0] == "[" and response[-1] == "]":
+        response = response[1:-1]
+    return response.strip()
 
 def extract_function_name_and_params(response: str):
     if response == "":
         return "", [], {}
+
     node = ast.parse(response, mode="eval")
 
     # Walk through the AST to extract the function name
@@ -43,6 +49,7 @@ def extract_function_name_and_params(response: str):
     extractor = FunctionNameExtractor()
     extractor.visit(node)
     function_name = extractor.function_name
+
     param_names = [kw.arg for kw in node.body.keywords]
     if param_names: 
         param_values = [ast.literal_eval(kw.value) for kw in node.body.keywords]
@@ -69,8 +76,11 @@ def correct_tool_call_function_format(response: str) -> Tuple[float, float, str]
     max_reward = 1.0
     reward = 1.0
 
+    # Clean the response first (handle square brackets)
+    cleaned_response = clean_response(response)
+
     try:
-        ast.parse(response)
+        ast.parse(cleaned_response)
     except Exception as e:
         reward = -1.0
         feedback = bad_message(f"Response was not in the correct format - {e}")
@@ -83,7 +93,10 @@ def correct_tool_call_function_name(response: str, expected_response: dict) -> T
     max_reward = 3.0
     reward = 3.0    
 
-    function_name, _, _ = extract_function_name_and_params(response)
+    # Clean the response first
+    cleaned_response = clean_response(response)
+    
+    function_name, _, _ = extract_function_name_and_params(cleaned_response)
     expected_function_name = expected_response['name']
 
     if function_name.strip() == expected_function_name.strip():
@@ -97,7 +110,10 @@ def correct_tool_call_function_name(response: str, expected_response: dict) -> T
 def correct_tool_argument_names(response: str, expected_response: dict) -> Tuple[float, float, str]:
     max_reward = 3.0
 
-    function_name, function_args, _ = extract_function_name_and_params(response)
+    # Clean the response first
+    cleaned_response = clean_response(response)
+    
+    function_name, function_args, _ = extract_function_name_and_params(cleaned_response)
     provided_args = set(function_args)
     expected_args = set(expected_response['arguments'].keys())
 
@@ -151,7 +167,10 @@ def correct_tool_argument_names(response: str, expected_response: dict) -> Tuple
 def correct_tool_argument_values(response: str, expected_response: dict) -> Tuple[float, float, str]:
     max_reward = 3.0
 
-    function_name, function_args, function_values = extract_function_name_and_params(response)
+    # Clean the response first
+    cleaned_response = clean_response(response)
+    
+    function_name, function_args, function_values = extract_function_name_and_params(cleaned_response)
     provided_args = set(function_args)
     expected_args = set(expected_response['arguments'].keys())
     required_args, optional_args = get_required_and_optional_args(expected_response)
@@ -217,6 +236,7 @@ def validate_tool_call(tool_call_json: str, function_call: str) -> Dict[str, Any
         
         # Step 1: Check function format
         format_reward, format_max, format_feedback = correct_tool_call_function_format(function_call)
+        
         # If format is invalid, return early
         if format_reward < 0:
             return {
@@ -231,6 +251,7 @@ def validate_tool_call(tool_call_json: str, function_call: str) -> Dict[str, Any
         
         # Step 2: Check function name
         name_reward, name_max, name_feedback = correct_tool_call_function_name(function_call, expected_response)
+        
         # If name is incorrect, return early
         if name_reward < 0:
             total_reward = format_reward + name_reward
@@ -248,6 +269,7 @@ def validate_tool_call(tool_call_json: str, function_call: str) -> Dict[str, Any
         
         # Step 3: Check argument names
         args_reward, args_max, args_feedback = correct_tool_argument_names(function_call, expected_response)
+        
         # If argument names are incorrect, return early
         if args_reward <= 0:
             total_reward = format_reward + name_reward + args_reward
@@ -266,6 +288,7 @@ def validate_tool_call(tool_call_json: str, function_call: str) -> Dict[str, Any
         
         # Step 4: Check argument values
         values_reward, values_max, values_feedback = correct_tool_argument_values(function_call, expected_response)
+        
         # Calculate total reward
         total_reward = format_reward + name_reward + args_reward + values_reward
         max_reward = format_max + name_max + args_max + values_max
@@ -298,8 +321,10 @@ if __name__ == "__main__":
     tool_call_json = '''{"role": "tool call", "content": {"name": "debug_document", "arguments": {"speed": 3957, "has_permission": false, "is_verified": true, "options": {"anatomy": "plateau"}}}}'''
     
     # Example function call (correct)
-    # correct_function_call = 'calculate_gpa(grades=["A", "B", "A", "C"], credit_hours=[3, 4, 3, 2])'
-    correct_function_call = "retrieve_analysis(permissions=['avalanche forecasting', 'marsh dynamics'])"
+    correct_function_call = '''debug_document(speed=3957, has_permission=false, is_verified=true, options={"anatomy": "plateau"})'''
+    
+    # Example function call with square brackets
+    bracketed_function_call = '''[debug_document(speed=3957, has_permission=false, is_verified=true, options={"anatomy": "plateau"})]'''
     
     # Example function call (incorrect name)
     incorrect_name_function_call = '''debug_doc(speed=3957, has_permission=false, is_verified=true, options={"anatomy": "plateau"})'''
@@ -315,17 +340,22 @@ if __name__ == "__main__":
     print("Correct function call validation:")
     print(json.dumps(result, indent=2))
     
-    # # Validate the incorrect name function call
-    # result = validate_tool_call(tool_call_json, incorrect_name_function_call)
-    # print("\nIncorrect name function call validation:")
-    # print(json.dumps(result, indent=2))
+    # Validate the bracketed function call
+    result = validate_tool_call(tool_call_json, bracketed_function_call)
+    print("\nBracketed function call validation:")
+    print(json.dumps(result, indent=2))
     
-    # # Validate the missing argument function call
-    # result = validate_tool_call(tool_call_json, missing_arg_function_call)
-    # print("\nMissing argument function call validation:")
-    # print(json.dumps(result, indent=2))
+    # Validate the incorrect name function call
+    result = validate_tool_call(tool_call_json, incorrect_name_function_call)
+    print("\nIncorrect name function call validation:")
+    print(json.dumps(result, indent=2))
     
-    # # Validate the incorrect value function call
-    # result = validate_tool_call(tool_call_json, incorrect_value_function_call)
-    # print("\nIncorrect value function call validation:")
-    # print(json.dumps(result, indent=2))
+    # Validate the missing argument function call
+    result = validate_tool_call(tool_call_json, missing_arg_function_call)
+    print("\nMissing argument function call validation:")
+    print(json.dumps(result, indent=2))
+    
+    # Validate the incorrect value function call
+    result = validate_tool_call(tool_call_json, incorrect_value_function_call)
+    print("\nIncorrect value function call validation:")
+    print(json.dumps(result, indent=2))
